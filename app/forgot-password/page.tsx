@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { ThemeToggle } from '@/components/theme-toggle';  
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');

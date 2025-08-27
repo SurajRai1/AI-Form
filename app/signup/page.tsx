@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, Bot, CheckCircle } from 'lucide-react';
@@ -23,14 +23,7 @@ export default function SignUpPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const router = useRouter();
-  const { user, loading: authLoading, signUp, signInWithGoogle } = useAuth();
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (!authLoading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, authLoading, router]);
+  const { signUp, signInWithGoogle } = useAuth();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +46,15 @@ export default function SignUpPage() {
     
     if (error) {
       setError(error.message);
-      setLoading(false);
     } else {
       setSuccess(true);
-      // Don't redirect manually - let user check email first
+      // Show success message and redirect to sign in
+      setTimeout(() => {
+        router.push('/signin');
+      }, 3000);
     }
+    
+    setLoading(false);
   };
 
   const handleGoogleSignIn = async () => {
@@ -70,25 +67,7 @@ export default function SignUpPage() {
       setError(error.message);
       setLoading(false);
     }
-    // Don't redirect manually - let the auth state change handle it
   };
-
-  // Show loading if checking authentication
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p>Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't show signup page if already authenticated
-  if (user) {
-    return null;
-  }
 
   if (success) {
     return (
@@ -119,7 +98,7 @@ export default function SignUpPage() {
               </p>
               <Link href="/signin">
                 <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-                  Go to Sign In
+                  Back to Sign In
                 </Button>
               </Link>
             </CardContent>

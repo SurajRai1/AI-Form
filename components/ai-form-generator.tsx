@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Sparkles, Wand2, Globe, Loader2, CheckCircle, ArrowRight, AlertCircle } from 'lucide-react';
+import { Sparkles, Wand2, Globe, Loader2, CheckCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AIService, GeneratedForm } from '@/lib/ai';
-import { env } from '@/lib/env';
 
 interface AIFormGeneratorProps {
   onFormGenerated: (forms: GeneratedForm[]) => void;
@@ -25,8 +24,6 @@ export default function AIFormGenerator({ onFormGenerated }: AIFormGeneratorProp
   const [language, setLanguage] = useState('English');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const isAIAvailable = !!env.OPENAI_API_KEY;
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -62,39 +59,13 @@ export default function AIFormGenerator({ onFormGenerated }: AIFormGeneratorProp
             Describe your form and let AI create 2 beautiful options for you
           </CardDescription>
         </div>
-        <div className="flex items-center justify-center gap-2">
-          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 px-4 py-2 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800">
-            <Sparkles className="mr-2 h-4 w-4" />
-            {isAIAvailable ? 'Powered by GPT-4' : 'Demo Mode'}
-          </Badge>
-          {!isAIAvailable && (
-            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 px-4 py-2 dark:bg-yellow-950 dark:text-yellow-300 dark:border-yellow-800">
-              <AlertCircle className="mr-2 h-4 w-4" />
-              AI Not Available
-            </Badge>
-          )}
-        </div>
+        <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 px-4 py-2 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800">
+          <Sparkles className="mr-2 h-4 w-4" />
+          Powered by GPT-4
+        </Badge>
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* AI Status Notification */}
-        {!isAIAvailable && (
-          <div className="p-4 bg-yellow-50 dark:bg-yellow-950/50 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
-              <div className="text-sm">
-                <p className="font-medium text-yellow-800 dark:text-yellow-200 mb-1">
-                  AI Features Not Available
-                </p>
-                <p className="text-yellow-700 dark:text-yellow-300">
-                  OpenAI API key is not configured. You'll see sample forms instead of AI-generated ones. 
-                  To enable full AI features, add your OpenAI API key to the environment variables.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Error message */}
         {error && (
           <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 rounded-lg">
@@ -150,12 +121,12 @@ export default function AIFormGenerator({ onFormGenerated }: AIFormGeneratorProp
           {loading ? (
             <div className="flex items-center">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {isAIAvailable ? 'Generating forms...' : 'Creating sample forms...'}
+              Generating forms...
             </div>
           ) : (
             <div className="flex items-center">
               <Sparkles className="mr-2 h-4 w-4" />
-              {isAIAvailable ? 'Generate 2 Form Options' : 'Create Sample Forms'}
+              Generate 2 Form Options
               <ArrowRight className="ml-2 h-4 w-4" />
             </div>
           )}
