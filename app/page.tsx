@@ -3,16 +3,51 @@
 import React from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Bot, Sparkles, BarChart3, Globe, Shield, Zap, CheckCircle, Star, Users, FileText, TrendingUp, Eye } from 'lucide-react';
+import {
+  ArrowRight,
+  Bot,
+  Sparkles,
+  BarChart3,
+  Globe,
+  Shield,
+  Zap,
+  CheckCircle,
+  Star,
+  Users,
+  FileText,
+  TrendingUp,
+  Eye,
+  Menu, // Import the Menu icon
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ThemeToggle } from '@/components/theme-toggle';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet'; // Import the Sheet component
 
 export default function HomePage() {
   const [isHovered, setIsHovered] = useState(false);
@@ -30,29 +65,63 @@ export default function HomePage() {
               FormCraft AI
             </h1>
           </div>
-          
+
           <div className="hidden md:flex items-center gap-4">
-            <Button variant="ghost" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">
+            <Button
+              variant="ghost"
+              className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+            >
               Features
             </Button>
-            <Button variant="ghost" className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100">
+            <Button
+              variant="ghost"
+              className="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100"
+            >
               Pricing
             </Button>
             <ThemeToggle />
-            <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950">
+            <Button
+              variant="outline"
+              className="border-blue-200 text-blue-600 hover:bg-blue-50 dark:border-blue-800 dark:text-blue-400 dark:hover:bg-blue-950"
+            >
               <Link href="/signin">Sign In</Link>
             </Button>
             <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200">
               <Link href="/signup">Get Started Free</Link>
             </Button>
           </div>
-          
+
           {/* Mobile menu button */}
           <div className="md:hidden flex items-center gap-2">
             <ThemeToggle />
-            <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
-              Menu
-            </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                >
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                  <SheetDescription>
+                    Navigate to different sections of the website.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="grid gap-4 py-4">
+                  <Button variant="ghost">Features</Button>
+                  <Button variant="ghost">Pricing</Button>
+                  <Button variant="outline">
+                    <Link href="/signin">Sign In</Link>
+                  </Button>
+                  <Button>
+                    <Link href="/signup">Get Started Free</Link>
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>
@@ -62,40 +131,52 @@ export default function HomePage() {
         <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 xl:gap-16 items-center max-w-7xl mx-auto">
           {/* Left side - Content */}
           <div className="space-y-6 sm:space-y-8 text-center lg:text-left order-2 lg:order-1">
-            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-4 py-2 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+            <Badge
+              variant="outline"
+              className="bg-blue-50 text-blue-700 border-blue-200 px-4 py-2 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
+            >
               <Sparkles className="mr-2 h-4 w-4" />
               AI-Powered Form Builder
             </Badge>
-          
+
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 dark:text-gray-100 leading-tight">
               Create Beautiful Forms
               <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 with AI Magic
               </span>
             </h1>
-          
+
             <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-2xl lg:max-w-none">
-              Transform your ideas into stunning, professional forms in seconds. Just describe what you need, 
-              and our AI will craft the perfect form for you.
+              Transform your ideas into stunning, professional forms in
+              seconds. Just describe what you need, and our AI will craft the
+              perfect form for you.
             </p>
-          
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link href="/signup">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-xl hover:shadow-2xl px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg transition-all duration-300 transform hover:scale-105"
                   onMouseEnter={() => setIsHovered(true)}
                   onMouseLeave={() => setIsHovered(false)}
                 >
                   Start Building for Free
-                  <ArrowRight className={`ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform ${isHovered ? 'translate-x-1' : ''}`} />
+                  <ArrowRight
+                    className={`ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform ${
+                      isHovered ? 'translate-x-1' : ''
+                    }`}
+                  />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="border-gray-300 dark:border-gray-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200">
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-gray-300 dark:border-gray-600 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-200"
+              >
                 Watch Demo
               </Button>
             </div>
-          
+
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 text-sm text-gray-500 dark:text-gray-400 justify-center lg:justify-start">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-500" />
@@ -127,29 +208,33 @@ export default function HomePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Describe your form:</label>
+                  <label className="text-sm font-medium">
+                    Describe your form:
+                  </label>
                   <div className="relative">
                     <Textarea
                       placeholder="Create a customer feedback form with name, email, rating scale, and comments..."
                       className="min-h-[80px] resize-none border-blue-200 focus:border-blue-400 pr-12"
                       defaultValue="Create a customer feedback form with name, email, rating scale, and comments"
                     />
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       className="absolute bottom-2 right-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
                     >
                       <Sparkles className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="border-t pt-4">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">AI is generating your form...</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        AI is generating your form...
+                      </span>
                     </div>
-                    
+
                     <div className="space-y-2 opacity-60">
                       <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
                       <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
@@ -167,9 +252,12 @@ export default function HomePage() {
       {/* Interactive Preview Section */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
         <div className="text-center mb-12 sm:mb-16 max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">See It In Action</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+            See It In Action
+          </h2>
           <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300">
-            Watch how our AI transforms your ideas into beautiful, functional forms
+            Watch how our AI transforms your ideas into beautiful, functional
+            forms
           </p>
         </div>
 
@@ -181,7 +269,9 @@ export default function HomePage() {
                 <Bot className="h-5 w-5 text-blue-600" />
                 AI Form Generator
               </CardTitle>
-              <CardDescription>Describe what you need in plain English</CardDescription>
+              <CardDescription>
+                Describe what you need in plain English
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <Textarea
@@ -203,7 +293,9 @@ export default function HomePage() {
                 <Eye className="h-5 w-5 text-green-600" />
                 Generated Form
               </CardTitle>
-              <CardDescription>Your AI-generated form is ready!</CardDescription>
+              <CardDescription>
+                Your AI-generated form is ready!
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
@@ -212,11 +304,19 @@ export default function HomePage() {
                   <Input placeholder="Enter your full name" className="mt-1" />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Email Address *</Label>
-                  <Input type="email" placeholder="your@email.com" className="mt-1" />
+                  <Label className="text-sm font-medium">
+                    Email Address *
+                  </Label>
+                  <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    className="mt-1"
+                  />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Overall Satisfaction *</Label>
+                  <Label className="text-sm font-medium">
+                    Overall Satisfaction *
+                  </Label>
                   <Select>
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select rating" />
@@ -230,8 +330,13 @@ export default function HomePage() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Additional Comments</Label>
-                  <Textarea placeholder="Share your thoughts..." className="mt-1 min-h-[80px]" />
+                  <Label className="text-sm font-medium">
+                    Additional Comments
+                  </Label>
+                  <Textarea
+                    placeholder="Share your thoughts..."
+                    className="mt-1 min-h-[80px]"
+                  />
                 </div>
                 <Button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700">
                   Submit Response
@@ -242,7 +347,7 @@ export default function HomePage() {
         </div>
 
         <div className="text-center mt-12">
-          <Button 
+          <Button
             size="lg"
             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white shadow-xl hover:shadow-2xl px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg transition-all duration-300 transform hover:scale-105"
           >
@@ -256,7 +361,9 @@ export default function HomePage() {
       <section className="bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-900 dark:to-slate-800 py-12 sm:py-16 lg:py-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 sm:mb-16 max-w-4xl mx-auto">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">The AI Magic Behind It</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+              The AI Magic Behind It
+            </h2>
             <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300">
               See how our AI understands your needs and creates perfect forms
             </p>
@@ -268,11 +375,14 @@ export default function HomePage() {
                 <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Bot className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <CardTitle className="text-lg sm:text-xl">Natural Language Processing</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  Natural Language Processing
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
-                  Our AI understands your plain English descriptions and converts them into structured form requirements.
+                  Our AI understands your plain English descriptions and
+                  converts them into structured form requirements.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -282,11 +392,14 @@ export default function HomePage() {
                 <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <CardTitle className="text-lg sm:text-xl">Smart Field Generation</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  Smart Field Generation
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
-                  Automatically generates appropriate field types, validation rules, and user-friendly labels.
+                  Automatically generates appropriate field types, validation
+                  rules, and user-friendly labels.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -296,11 +409,14 @@ export default function HomePage() {
                 <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <CardTitle className="text-lg sm:text-xl">Instant Optimization</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">
+                  Instant Optimization
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
-                  Forms are optimized for conversion rates, user experience, and mobile responsiveness from the start.
+                  Forms are optimized for conversion rates, user experience,
+                  and mobile responsiveness from the start.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -311,9 +427,12 @@ export default function HomePage() {
       {/* Features Section */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
         <div className="text-center mb-12 sm:mb-16 max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">Why Choose FormCraft AI?</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+            Why Choose FormCraft AI?
+          </h2>
           <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300">
-            Experience the future of form building with AI-powered automation and beautiful design
+            Experience the future of form building with AI-powered automation
+            and beautiful design
           </p>
         </div>
 
@@ -323,12 +442,15 @@ export default function HomePage() {
               <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mb-4">
                 <Bot className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
-              <CardTitle className="text-lg sm:text-xl group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">AI-Powered Creation</CardTitle>
+              <CardTitle className="text-lg sm:text-xl group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                AI-Powered Creation
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
-                Simply describe your form in natural language. Our AI understands your needs and creates 
-                professional forms instantly.
+                Simply describe your form in natural language. Our AI
+                understands your needs and creates professional forms
+                instantly.
               </CardDescription>
             </CardContent>
           </Card>
@@ -338,12 +460,14 @@ export default function HomePage() {
               <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
                 <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
-              <CardTitle className="text-lg sm:text-xl group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Smart Analytics</CardTitle>
+              <CardTitle className="text-lg sm:text-xl group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                Smart Analytics
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
-                Get AI-powered insights from your form responses. Understand trends, patterns, 
-                and user behavior automatically.
+                Get AI-powered insights from your form responses. Understand
+                trends, patterns, and user behavior automatically.
               </CardDescription>
             </CardContent>
           </Card>
@@ -353,11 +477,13 @@ export default function HomePage() {
               <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4">
                 <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
               </div>
-              <CardTitle className="text-lg sm:text-xl group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">Global Ready</CardTitle>
+              <CardTitle className="text-lg sm:text-xl group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">
+                Global Ready
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <CardDescription className="text-center text-sm sm:text-base leading-relaxed">
-                Built-in multilingual support starting with English and Hindi. 
+                Built-in multilingual support starting with English and Hindi.
                 Reach your global audience effortlessly.
               </CardDescription>
             </CardContent>
@@ -370,20 +496,36 @@ export default function HomePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center text-white max-w-4xl mx-auto">
             <div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 animate-pulse">50K+</div>
-              <div className="text-sm sm:text-base text-blue-100 dark:text-blue-200">Forms Created</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 animate-pulse">
+                50K+
+              </div>
+              <div className="text-sm sm:text-base text-blue-100 dark:text-blue-200">
+                Forms Created
+              </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 animate-pulse">2M+</div>
-              <div className="text-sm sm:text-base text-blue-100 dark:text-blue-200">Responses Collected</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 animate-pulse">
+                2M+
+              </div>
+              <div className="text-sm sm:text-base text-blue-100 dark:text-blue-200">
+                Responses Collected
+              </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 animate-pulse">15K+</div>
-              <div className="text-sm sm:text-base text-blue-100 dark:text-blue-200">Happy Users</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 animate-pulse">
+                15K+
+              </div>
+              <div className="text-sm sm:text-base text-blue-100 dark:text-blue-200">
+                Happy Users
+              </div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 animate-pulse">99.9%</div>
-              <div className="text-sm sm:text-base text-blue-100 dark:text-blue-200">Uptime</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 animate-pulse">
+                99.9%
+              </div>
+              <div className="text-sm sm:text-base text-blue-100 dark:text-blue-200">
+                Uptime
+              </div>
             </div>
           </div>
         </div>
@@ -392,53 +534,80 @@ export default function HomePage() {
       {/* Testimonials */}
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
         <div className="text-center mb-12 sm:mb-16 max-w-4xl mx-auto">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">Loved by Thousands</h2>
-          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300">See what our users are saying about FormCraft AI</p>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+            Loved by Thousands
+          </h2>
+          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300">
+            See what our users are saying about FormCraft AI
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 sm:gap-8 max-w-6xl mx-auto">
           {[
             {
-              name: "Sarah Chen",
-              role: "Product Manager",
-              company: "TechCorp",
-              avatar: "https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400",
-              content: "FormCraft AI saved us hours of work. The AI understands exactly what we need and creates beautiful forms instantly.",
-              rating: 5
+              name: 'Sarah Chen',
+              role: 'Product Manager',
+              company: 'TechCorp',
+              avatar:
+                'https://images.pexels.com/photos/1239291/pexels-photo-1239291.jpeg?auto=compress&cs=tinysrgb&w=400',
+              content:
+                'FormCraft AI saved us hours of work. The AI understands exactly what we need and creates beautiful forms instantly.',
+              rating: 5,
             },
             {
-              name: "Raj Patel",
-              role: "Marketing Director",
-              company: "GrowthLab",
-              avatar: "https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=400",
-              content: "The multilingual support is fantastic. We can now reach our global audience without any barriers.",
-              rating: 5
+              name: 'Raj Patel',
+              role: 'Marketing Director',
+              company: 'GrowthLab',
+              avatar:
+                'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=400',
+              content:
+                'The multilingual support is fantastic. We can now reach our global audience without any barriers.',
+              rating: 5,
             },
             {
-              name: "Emily Rodriguez",
-              role: "UX Designer",
-              company: "DesignStudio",
-              avatar: "https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=400",
-              content: "The forms look absolutely stunning. Our response rates increased by 40% after switching to FormCraft AI.",
-              rating: 5
-            }
+              name: 'Emily Rodriguez',
+              role: 'UX Designer',
+              company: 'DesignStudio',
+              avatar:
+                'https://images.pexels.com/photos/1130626/pexels-photo-1130626.jpeg?auto=compress&cs=tinysrgb&w=400',
+              content:
+                'The forms look absolutely stunning. Our response rates increased by 40% after switching to FormCraft AI.',
+              rating: 5,
+            },
           ].map((testimonial, index) => (
-            <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <Card
+              key={index}
+              className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
+            >
               <CardContent className="pt-6">
                 <div className="flex mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <Star
+                      key={i}
+                      className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                    />
                   ))}
                 </div>
-                <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm sm:text-base">"{testimonial.content}"</p>
+                <p className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed text-sm sm:text-base">
+                  "{testimonial.content}"
+                </p>
                 <div className="flex items-center gap-3">
                   <Avatar>
                     <AvatarImage src={testimonial.avatar} />
-                    <AvatarFallback>{testimonial.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    <AvatarFallback>
+                      {testimonial.name
+                        .split(' ')
+                        .map((n) => n[0])
+                        .join('')}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
-                    <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base">{testimonial.name}</div>
-                    <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">{testimonial.role} at {testimonial.company}</div>
+                    <div className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-base">
+                      {testimonial.name}
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                      {testimonial.role} at {testimonial.company}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -455,22 +624,23 @@ export default function HomePage() {
               Ready to Transform Your Forms?
             </h2>
             <p className="text-lg sm:text-xl text-blue-100 dark:text-blue-200 leading-relaxed">
-              Join thousands of users who are already creating beautiful, intelligent forms with AI. 
-              Start your free account today and experience the future of form building.
+              Join thousands of users who are already creating beautiful,
+              intelligent forms with AI. Start your free account today and
+              experience the future of form building.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/signup">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-white text-blue-900 hover:bg-gray-100 shadow-xl hover:shadow-2xl px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105"
                 >
                   Start Building for Free
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
-              <Button 
-                variant="outline" 
-                size="lg" 
+              <Button
+                variant="outline"
+                size="lg"
                 className="border-blue-300 text-blue-100 hover:bg-blue-800 dark:hover:bg-blue-900 px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg transition-all duration-200"
               >
                 Schedule Demo
@@ -506,34 +676,125 @@ export default function HomePage() {
                 <span className="text-xl font-bold">FormCraft AI</span>
               </div>
               <p className="text-gray-400 dark:text-gray-500 leading-relaxed text-sm sm:text-base">
-                The most intelligent form builder powered by AI. Create, share, and analyze forms like never before.
+                The most intelligent form builder powered by AI. Create, share,
+                and analyze forms like never before.
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-4 text-sm sm:text-base">Product</h3>
+              <h3 className="font-semibold mb-4 text-sm sm:text-base">
+                Product
+              </h3>
               <ul className="space-y-2 text-gray-400 dark:text-gray-500 text-sm sm:text-base">
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Pricing</a></li>
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Templates</a></li>
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Integrations</a></li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Templates
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Integrations
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold mb-4 text-sm sm:text-base">Company</h3>
+              <h3 className="font-semibold mb-4 text-sm sm:text-base">
+                Company
+              </h3>
               <ul className="space-y-2 text-gray-400 dark:text-gray-500 text-sm sm:text-base">
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">About</a></li>
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Careers</a></li>
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Contact</a></li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Blog
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Careers
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Contact
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold mb-4 text-sm sm:text-base">Support</h3>
+              <h3 className="font-semibold mb-4 text-sm sm:text-base">
+                Support
+              </h3>
               <ul className="space-y-2 text-gray-400 dark:text-gray-500 text-sm sm:text-base">
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Documentation</a></li>
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">API Reference</a></li>
-                <li><a href="#" className="hover:text-white dark:hover:text-gray-200 transition-colors">Status</a></li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Help Center
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Documentation
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    API Reference
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-white dark:hover:text-gray-200 transition-colors"
+                  >
+                    Status
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
