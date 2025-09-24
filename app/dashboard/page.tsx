@@ -42,7 +42,7 @@ import { getFormById } from '@/lib/database';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/theme-toggle';
 
-// A wrapper to use searchParams, which must be done in a Client Component
+// A wrapper to use searchParams
 function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -140,6 +140,7 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1 overflow-y-auto">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+              {/* These links now navigate via URL, which is more robust */}
               <Link
                 href="/dashboard?tab=chat"
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
@@ -149,7 +150,7 @@ export default function DashboardPage() {
               </Link>
               <Link
                 href="/dashboard?tab=forms"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
               >
                 <FileText className="h-4 w-4" />
                 My Forms
