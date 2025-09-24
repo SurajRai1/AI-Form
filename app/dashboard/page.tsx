@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +15,7 @@ import {
   Send,
   Settings as SettingsIcon,
   BarChart3,
+  ArrowLeft,
 } from 'lucide-react';
 import {
   Card,
@@ -33,16 +35,83 @@ import {
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import AIDashboard from '@/components/ai-dashboard';
+import FormBuilder from '@/components/form-builder';
+import FormPreview from '@/components/form-preview';
+import { GeneratedForm } from '@/lib/ai';
+import { getFormById } from '@/lib/database';
+import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/theme-toggle';
+
+// A wrapper to use searchParams, which must be done in a Client Component
+function DashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const view = searchParams.get('view');
+  const formId = searchParams.get('formId');
+  const tab = searchParams.get('tab') || 'forms'; // Default to forms tab
+
+  const [activeTab, setActiveTab] = useState(tab);
+  const [formToLoad, setFormToLoad] = React.useState<GeneratedForm | null>(null);
+  const [isLoadingForm, setIsLoadingForm] = React.useState(false);
+
+  // Update activeTab when URL changes
+  React.useEffect(() => {
+    setActiveTab(tab);
+  }, [tab]);
+
+  React.useEffect(() => {
+    if ((view === 'builder' || view === 'preview') && formId) {
+      setIsLoadingForm(true);
+      const fetchForm = async () => {
+        try {
+          const form = await getFormById(formId);
+          setFormToLoad(form);
+        } catch (error) {
+          toast.error('Failed to load the form.');
+          console.error(error);
+          router.push('/dashboard');
+        } finally {
+          setIsLoadingForm(false);
+        }
+      };
+      fetchForm();
+    }
+  }, [view, formId, router]);
+  
+  const handleBackToDashboard = () => {
+    router.push('/dashboard');
+  };
+
+  if (isLoadingForm) {
+      return (
+        <div className="flex h-full items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      );
+  }
+
+  if (view === 'builder' && formToLoad) {
+    return <FormBuilder form={formToLoad} onSaveSuccess={handleBackToDashboard} />;
+  }
+
+  if (view === 'preview' && formToLoad) {
+    return (
+        <div className="p-4 sm:p-6 lg:p-8">
+            <Button onClick={handleBackToDashboard} variant="outline" className="mb-4">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Forms
+            </Button>
+            <FormPreview form={formToLoad} />
+        </div>
+    );
+  }
+  
+  return <AIDashboard activeTab={activeTab as any} setActiveTab={(newTab) => router.push(`/dashboard?tab=${newTab}`)} />;
+}
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
-  const [activeTab, setActiveTab] = useState('chat');
-
-  const renderContent = () => {
-    return <AIDashboard activeTab={activeTab} setActiveTab={setActiveTab} />;
-  };
-
+  
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/40">
@@ -60,7 +129,7 @@ export default function DashboardPage() {
       <div className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/" className="flex items-center gap-2 font-semibold">
+            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
               <Package2 className="h-6 w-6" />
               <span className="">FormCraft AI</span>
             </Link>
@@ -71,50 +140,34 @@ export default function DashboardPage() {
           </div>
           <div className="flex-1 overflow-y-auto">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <button
-                onClick={() => setActiveTab('chat')}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
-                  activeTab === 'chat'
-                    ? 'bg-muted text-primary'
-                    : 'text-muted-foreground'
-                }`}
+              <Link
+                href="/dashboard?tab=chat"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <Send className="h-4 w-4" />
                 AI Chat
-              </button>
-              <button
-                onClick={() => setActiveTab('forms')}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
-                  activeTab === 'forms'
-                    ? 'bg-muted text-primary'
-                    : 'text-muted-foreground'
-                }`}
+              </Link>
+              <Link
+                href="/dashboard?tab=forms"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <FileText className="h-4 w-4" />
                 My Forms
-              </button>
-              <button
-                onClick={() => setActiveTab('analytics')}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
-                  activeTab === 'analytics'
-                    ? 'bg-muted text-primary'
-                    : 'text-muted-foreground'
-                }`}
+              </Link>
+              <Link
+                href="/dashboard?tab=analytics"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <BarChart3 className="h-4 w-4" />
                 Analytics
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
-                  activeTab === 'settings'
-                    ? 'bg-muted text-primary'
-                    : 'text-muted-foreground'
-                }`}
+              </Link>
+              <Link
+                href="/dashboard?tab=settings"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <SettingsIcon className="h-4 w-4" />
                 Settings
-              </button>
+              </Link>
             </nav>
           </div>
           <div className="mt-auto p-4">
@@ -136,7 +189,7 @@ export default function DashboardPage() {
         </div>
       </div>
       <div className="flex flex-col max-h-screen overflow-hidden">
-        {/* Mobile Header */}
+        {/* Header with Theme Toggle */}
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
             <SheetTrigger asChild>
@@ -158,50 +211,34 @@ export default function DashboardPage() {
                   <Package2 className="h-6 w-6" />
                   <span className="">FormCraft AI</span>
                 </Link>
-                <button
-                  onClick={() => setActiveTab('chat')}
-                  className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground ${
-                    activeTab === 'chat'
-                      ? 'bg-muted text-foreground'
-                      : 'text-muted-foreground'
-                  }`}
+                 <Link
+                    href="/dashboard?tab=chat"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                 >
+                    <Send className="h-5 w-5" />
+                    AI Chat
+                </Link>
+                <Link
+                    href="/dashboard?tab=forms"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
                 >
-                  <Send className="h-5 w-5" />
-                  AI Chat
-                </button>
-                <button
-                  onClick={() => setActiveTab('forms')}
-                  className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground ${
-                    activeTab === 'forms'
-                      ? 'bg-muted text-foreground'
-                      : 'text-muted-foreground'
-                  }`}
+                    <FileText className="h-5 w-5" />
+                    My Forms
+                </Link>
+                <Link
+                    href="/dashboard?tab=analytics"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
-                  <FileText className="h-5 w-5" />
-                  My Forms
-                </button>
-                <button
-                  onClick={() => setActiveTab('analytics')}
-                  className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground ${
-                    activeTab === 'analytics'
-                      ? 'bg-muted text-foreground'
-                      : 'text-muted-foreground'
-                  }`}
+                    <BarChart3 className="h-5 w-5" />
+                    Analytics
+                </Link>
+                <Link
+                    href="/dashboard?tab=settings"
+                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
                 >
-                  <BarChart3 className="h-5 w-5" />
-                  Analytics
-                </button>
-                <button
-                  onClick={() => setActiveTab('settings')}
-                  className={`mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 hover:text-foreground ${
-                    activeTab === 'settings'
-                      ? 'bg-muted text-foreground'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  <SettingsIcon className="h-5 w-5" />
-                  Settings
-                </button>
+                    <SettingsIcon className="h-5 w-5" />
+                    Settings
+                </Link>
               </nav>
               <div className="mt-auto">
                 <Card>
@@ -253,8 +290,10 @@ export default function DashboardPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex-1 overflow-hidden">
-          {renderContent()}
+        <main className="flex-1 overflow-auto">
+            <Suspense fallback={<div className="flex h-full items-center justify-center">Loading...</div>}>
+              <DashboardContent />
+            </Suspense>
         </main>
       </div>
     </div>

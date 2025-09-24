@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, GripVertical, Settings, Eye, Save, Globe, Sparkles } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Settings, Eye, Save, Globe, Sparkles, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,9 +14,7 @@ import { GeneratedForm, FormField } from '@/lib/ai';
 
 interface FormBuilderProps {
   form: GeneratedForm;
-  onSave: (form: GeneratedForm) => void;
-  onPublish: (form: GeneratedForm) => void;
-  onTranslate: (form: GeneratedForm, language: string) => void;
+  onSaveSuccess: () => void;
 }
 
 const fieldTypes = [
@@ -43,10 +41,9 @@ const languages = [
   'Russian', 'Japanese', 'Korean', 'Chinese', 'Arabic', 'Hindi'
 ];
 
-export default function FormBuilder({ form, onSave, onPublish, onTranslate }: FormBuilderProps) {
+export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
   const [currentForm, setCurrentForm] = useState<GeneratedForm>(form);
   const [selectedField, setSelectedField] = useState<string | null>(null);
-  const [previewMode, setPreviewMode] = useState(false);
 
   const updateForm = (updates: Partial<GeneratedForm>) => {
     setCurrentForm(prev => ({ ...prev, ...updates }));
@@ -324,45 +321,42 @@ export default function FormBuilder({ form, onSave, onPublish, onTranslate }: Fo
   };
 
   return (
-    <div className="space-y-6">
+    <div className="h-full flex flex-col p-4 sm:p-6 lg:p-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-6 flex-shrink-0">
         <div>
+            <Button onClick={onSaveSuccess} variant="ghost" className="mb-2">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Forms
+            </Button>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             Form Builder
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Customize your form and preview how it will look
+            Customize your form and save the changes
           </p>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => setPreviewMode(!previewMode)}
+            onClick={() => {}}
           >
             <Eye className="mr-2 h-4 w-4" />
-            {previewMode ? 'Edit Mode' : 'Preview'}
+            Preview
           </Button>
           <Button
-            variant="outline"
-            onClick={() => onSave(currentForm)}
-          >
-            <Save className="mr-2 h-4 w-4" />
-            Save
-          </Button>
-          <Button
-            onClick={() => onPublish(currentForm)}
+            onClick={onSaveSuccess}
             className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
           >
-            <Sparkles className="mr-2 h-4 w-4" />
-            Publish Form
+            <Save className="mr-2 h-4 w-4" />
+            Save & Close
           </Button>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Form Settings */}
-        <div className="space-y-6">
+      <div className="flex-grow grid lg:grid-cols-12 gap-6 overflow-hidden">
+        {/* Left Column: Settings (Scrollable) */}
+        <div className="lg:col-span-4 xl:col-span-3 h-full overflow-y-auto space-y-6 pr-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -371,7 +365,6 @@ export default function FormBuilder({ form, onSave, onPublish, onTranslate }: Fo
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Title */}
               <div className="space-y-2">
                 <Label>Form Title</Label>
                 <Input
@@ -381,7 +374,6 @@ export default function FormBuilder({ form, onSave, onPublish, onTranslate }: Fo
                 />
               </div>
 
-              {/* Description */}
               <div className="space-y-2">
                 <Label>Description</Label>
                 <Textarea
@@ -392,13 +384,10 @@ export default function FormBuilder({ form, onSave, onPublish, onTranslate }: Fo
                 />
               </div>
 
-              {/* Theme */}
               <div className="space-y-2">
                 <Label>Theme</Label>
                 <Select value={currentForm.theme} onValueChange={(value) => updateForm({ theme: value as any })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {themes.map(theme => (
                       <SelectItem key={theme.value} value={theme.value}>
@@ -412,13 +401,10 @@ export default function FormBuilder({ form, onSave, onPublish, onTranslate }: Fo
                 </Select>
               </div>
 
-              {/* Language */}
               <div className="space-y-2">
                 <Label>Language</Label>
                 <Select value={currentForm.language} onValueChange={(value) => updateForm({ language: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {languages.map(lang => (
                       <SelectItem key={lang} value={lang}>
@@ -433,33 +419,22 @@ export default function FormBuilder({ form, onSave, onPublish, onTranslate }: Fo
               </div>
             </CardContent>
           </Card>
-
-          {/* Add Field */}
+          
           <Card>
-            <CardHeader>
-              <CardTitle>Add New Field</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle>Add New Field</CardTitle></CardHeader>
             <CardContent>
-              <Button
-                onClick={addField}
-                className="w-full"
-                variant="outline"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Field
+              <Button onClick={addField} className="w-full" variant="outline">
+                <Plus className="mr-2 h-4 w-4" /> Add Field
               </Button>
             </CardContent>
           </Card>
 
-          {/* Field Editor */}
-          {selectedField && (
-            renderFieldEditor(currentForm.fields.find(f => f.id === selectedField)!)
-          )}
+          {selectedField && renderFieldEditor(currentForm.fields.find(f => f.id === selectedField)!)}
         </div>
 
-        {/* Form Preview */}
-        <div className="lg:col-span-2">
-          <Card>
+        {/* Right Column: Form Preview (Scrollable) */}
+        <div className="lg:col-span-8 xl:col-span-9 h-full overflow-y-auto">
+          <Card className="h-full">
             <CardHeader>
               <CardTitle>Form Preview</CardTitle>
               <CardDescription>
@@ -468,9 +443,9 @@ export default function FormBuilder({ form, onSave, onPublish, onTranslate }: Fo
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="text-center space-y-2">
+                <div className="text-center space-y-2 p-4 bg-muted/50 rounded-lg">
                   <h3 className="text-xl font-semibold">{currentForm.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400">{currentForm.description}</p>
+                  <p className="text-muted-foreground">{currentForm.description}</p>
                 </div>
 
                 <div className="space-y-4">

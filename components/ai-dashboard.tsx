@@ -1,37 +1,47 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Send,
   Plus,
   BarChart3,
   FileText,
   Eye,
-  Download,
   Trash2,
   Edit,
   Users,
   TrendingUp,
   Clock,
   Star,
+  MoreHorizontal,
+  Check,
+  X,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserForms, saveForm, deleteForm as dbDeleteForm, updateForm as dbUpdateForm } from '@/lib/database';
+import { AIService, GeneratedForm } from '@/lib/ai';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 type ChatMessage = {
   id: number;
   type: 'assistant' | 'user';
-  content: string;
+  content: React.ReactNode;
   timestamp: Date;
 };
 
-type FormItem = {
-  id: number;
-  title: string;
-  description: string;
-  created: string;
-  responses: number;
-  views: number;
-  status: 'active' | 'draft';
-  fields: string[];
+type FormItem = GeneratedForm & {
+    created_at: string;
+    responses: number;
+    views: number;
+    status: 'active' | 'draft';
+    published: boolean;
 };
 
 // Local date formatting helper
@@ -47,6 +57,7 @@ interface AIDashboardProps {
   setActiveTab: (tab: 'chat' | 'forms' | 'analytics' | 'settings') => void;
 }
 
+// ... (Keep the ChatInterface component as it is)
 interface ChatInterfaceProps {
     chatMessages: ChatMessage[];
     isTyping: boolean;
@@ -84,7 +95,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatMessages, isTyping, i
                             : 'bg-white/80 dark:bg-slate-900/80 text-gray-800 dark:text-gray-100 border border-gray-200/60 dark:border-gray-700/60 backdrop-blur'
                         }`}
                         >
-                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        <div className="text-sm leading-relaxed">{message.content}</div>
                         <p className="text-xs opacity-70 mt-2">
                             {message.timestamp.toLocaleTimeString([], {
                             hour: '2-digit',
@@ -143,105 +154,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatMessages, isTyping, i
     );
 };
 
-interface FormsLibraryProps {
-    forms: FormItem[];
-    setActiveTab: (tab: 'chat' | 'forms' | 'analytics' | 'settings') => void;
-}
-
-const FormsLibrary: React.FC<FormsLibraryProps> = ({ forms, setActiveTab }) => {
-    return (
-        <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                My Forms
-                </h2>
-                <button
-                onClick={() => setActiveTab('chat')}
-                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors shadow"
-                >
-                <Plus size={16} />
-                <span>Create New Form</span>
-                </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {forms.map((form) => (
-                <div
-                    key={form.id}
-                    className="bg-white/80 dark:bg-slate-900/80 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-shadow backdrop-blur"
-                >
-                    <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-2">
-                        {form.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-                        {form.description}
-                        </p>
-                    </div>
-                    <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        form.status === 'active'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
-                        }`}
-                    >
-                        {form.status}
-                    </span>
-                    </div>
-
-                    <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    <span>Created: {formatDate(form.created)}</span>
-                    <span>{form.fields.length} fields</span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="text-center">
-                        <div className="flex items-center justify-center space-x-1">
-                        <Users size={14} />
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {form.responses}
-                        </span>
-                        </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Responses
-                        </p>
-                    </div>
-                    <div className="text-center">
-                        <div className="flex items-center justify-center space-x-1">
-                        <Eye size={14} />
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                            {form.views}
-                        </span>
-                        </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                        Views
-                        </p>
-                    </div>
-                    </div>
-
-                    <div className="flex space-x-2">
-                    <button className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                        <Eye size={14} />
-                        <span className="text-sm">Preview</span>
-                    </button>
-                    <button className="flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                        <Edit size={14} />
-                    </button>
-                    <button className="flex items-center justify-center px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
-                        <Download size={14} />
-                    </button>
-                    <button className="flex items-center justify-center px-3 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
-                        <Trash2 size={14} />
-                    </button>
-                    </div>
-                </div>
-                ))}
-            </div>
-        </div>
-    );
-};
-
+// ... (Keep Analytics component as it is)
 interface AnalyticsProps {
     forms: FormItem[];
 }
@@ -418,11 +331,142 @@ const Analytics: React.FC<AnalyticsProps> = ({ forms }) => {
     );
 };
 
+interface FormsLibraryProps {
+    forms: FormItem[];
+    setActiveTab: (tab: 'chat' | 'forms' | 'analytics' | 'settings') => void;
+    isLoading: boolean;
+    onDelete: (formId: string) => void;
+    onUpdate: (formId: string, updatedForm: GeneratedForm) => void;
+    onPreview: (form: GeneratedForm) => void;
+    onEdit: (form: GeneratedForm) => void;
+}
+
+const FormsLibrary: React.FC<FormsLibraryProps> = ({ forms, setActiveTab, isLoading, onDelete, onUpdate, onPreview, onEdit }) => {
+    
+    if (isLoading) {
+        return <div className="p-6 text-center">Loading forms...</div>
+    }
+    
+    return (
+        <div className="p-6">
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                My Forms
+                </h2>
+                <button
+                onClick={() => setActiveTab('chat')}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors shadow"
+                >
+                <Plus size={16} />
+                <span>Create New Form</span>
+                </button>
+            </div>
+
+            {forms.length === 0 ? (
+                <div className="text-center py-10">
+                    <p className="text-gray-500">You haven't created any forms yet.</p>
+                    <p className="text-gray-500">Click "Create New Form" to get started!</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {forms.map((form) => (
+                    <div
+                        key={form.id}
+                        className="bg-white/80 dark:bg-slate-900/80 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-shadow backdrop-blur flex flex-col"
+                    >
+                        <div className="flex-1">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex-1">
+                                    <h3 className="font-semibold text-lg text-gray-900 dark:text-gray-100 mb-2">
+                                    {form.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                    {form.description}
+                                    </p>
+                                </div>
+                                <span
+                                    className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    form.status === 'active'
+                                        ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+                                        : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+                                    }`}
+                                >
+                                    {form.status}
+                                </span>
+                            </div>
+
+                            <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                <span>Created: {formatDate(form.created_at)}</span>
+                                <span>{form.fields.length} fields</span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1">
+                                    <Users size={14} />
+                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {form.responses}
+                                    </span>
+                                    </div>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                    Responses
+                                    </p>
+                                </div>
+                                <div className="text-center">
+                                    <div className="flex items-center justify-center space-x-1">
+                                    <Eye size={14} />
+                                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {form.views}
+                                    </span>
+                                    </div>
+                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                    Views
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex space-x-2">
+                            <Button variant="outline" size="sm" className="flex-1" onClick={() => onPreview(form)}>
+                                <Eye size={14} className="mr-2"/> Preview
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon">
+                                        <MoreHorizontal size={14} />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={() => onEdit(form)}>
+                                        <Edit size={14} className="mr-2"/> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onUpdate(form.id, { ...form, publishedAt: form.status === 'draft' ? new Date() : undefined })}>
+                                        {form.status === 'draft' ? <Check size={14} className="mr-2"/> : <X size={14} className="mr-2"/>}
+                                        {form.status === 'draft' ? 'Publish' : 'Unpublish'}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="text-red-500" onClick={() => onDelete(form.id)}>
+                                        <Trash2 size={14} className="mr-2"/> Delete
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const AIDashboard: React.FC<AIDashboardProps> = ({
   activeTab,
   setActiveTab,
 }) => {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [forms, setForms] = useState<FormItem[]>([]);
+  const [loadingForms, setLoadingForms] = useState(true);
+
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
       id: 1,
@@ -434,97 +478,141 @@ const AIDashboard: React.FC<AIDashboardProps> = ({
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [forms, setForms] = useState<FormItem[]>([
-    {
-      id: 1,
-      title: 'Contact Form',
-      description: 'Basic contact form with name, email, and message',
-      created: '2024-01-20',
-      responses: 45,
-      views: 120,
-      status: 'active',
-      fields: ['name', 'email', 'message'],
-    },
-    {
-      id: 2,
-      title: 'Customer Feedback Survey',
-      description: 'Comprehensive feedback form for service quality',
-      created: '2024-01-18',
-      responses: 89,
-      views: 200,
-      status: 'active',
-      fields: ['rating', 'experience', 'recommendations'],
-    },
-    {
-      id: 3,
-      title: 'Job Application Form',
-      description: 'Detailed application form for hiring process',
-      created: '2024-01-15',
-      responses: 23,
-      views: 78,
-      status: 'draft',
-      fields: ['personal_info', 'experience', 'skills', 'resume'],
-    },
-  ]);
+
+  const fetchForms = async () => {
+    if (!user) return;
+    setLoadingForms(true);
+    try {
+        const userFormsData = await getUserForms(user.id);
+        const formattedForms = userFormsData
+            .filter(form => form.content) // Filter out forms without content
+            .map((form: any) => ({
+            ...form.content,
+            id: form.id,
+            created_at: form.created_at,
+            responses: 0,
+            views: 0,
+            status: form.published ? 'active' : 'draft',
+        }));
+        setForms(formattedForms);
+    } catch (error) {
+        console.error("Error fetching forms:", error);
+        toast.error("Could not fetch your forms.");
+    } finally {
+        setLoadingForms(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchForms();
+  }, [user]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || !user) return;
 
     const userMessage: ChatMessage = {
-      id: chatMessages.length + 1,
+      id: Date.now(),
       type: 'user',
       content: inputMessage,
       timestamp: new Date(),
     };
 
     setChatMessages((prev) => [...prev, userMessage]);
+    const currentInput = inputMessage;
     setInputMessage('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const aiResponses = [
-        "I'll help you create that form! Let me generate a custom form based on your requirements. What specific fields would you like to include?",
-        'Great idea! I can build that form for you. Would you like me to add any specific validation rules or styling preferences?',
-        "Perfect! I'll create a professional form for you. Should I include any conditional logic or multi-step functionality?",
-        'I understand what you need. Let me design a form that captures all the necessary information. Any particular design style you prefer?',
-      ];
-
-      const aiMessage: ChatMessage = {
-        id: chatMessages.length + 2,
+    const generatingMessage: ChatMessage = {
+        id: Date.now() + 1,
         type: 'assistant',
-        content: aiResponses[Math.floor(Math.random() * aiResponses.length)],
+        content: "Great! I'm generating a couple of form options for you. This might take a moment...",
         timestamp: new Date(),
-      };
+    };
+    setChatMessages((prev) => [...prev, generatingMessage]);
 
-      setChatMessages((prev) => [...prev, aiMessage]);
-      setIsTyping(false);
+    try {
+        const generatedForms = await AIService.generateForms(currentInput);
+        
+        for (const form of generatedForms) {
+            await saveForm(user.id, form);
+        }
 
-      if (
-        userMessage.content.toLowerCase().includes('create') ||
-        userMessage.content.toLowerCase().includes('build')
-      ) {
-        setTimeout(() => {
-          const newForm: FormItem = {
-            id: forms.length + 1,
-            title: `Generated Form ${forms.length + 1}`,
-            description: 'AI-generated form based on your prompt',
-            created: new Date().toISOString().split('T')[0],
-            responses: 0,
-            views: 0,
-            status: 'draft',
-            fields: ['field1', 'field2', 'field3'],
-          };
-          setForms((prev) => [...prev, newForm]);
-        }, 1000);
-      }
-    }, 1200);
+        const generatedMessage: ChatMessage = {
+          id: Date.now() + 2,
+          type: 'assistant',
+          content: (
+            <div className="space-y-3">
+              <p>I've created two new form drafts for you!</p>
+              <Button
+                onClick={() => {
+                  fetchForms();
+                  setActiveTab('forms');
+                }}
+                size="sm"
+                className="bg-white text-blue-600 border-blue-300 hover:bg-blue-50"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                View Generated Forms
+              </Button>
+            </div>
+          ),
+          timestamp: new Date(),
+        };
+        setChatMessages((prev) => [...prev, generatedMessage]);
+        toast.success("New forms have been generated!");
+
+    } catch (error) {
+        console.error("Failed to generate and save forms:", error);
+        const errorMessage: ChatMessage = {
+            id: Date.now() + 2,
+            type: 'assistant',
+            content: "I'm sorry, I encountered an error while generating your forms. Please try again.",
+            timestamp: new Date(),
+        };
+        setChatMessages((prev) => [...prev, errorMessage]);
+        toast.error("Form generation failed.");
+    } finally {
+        setIsTyping(false);
+    }
   };
-
+  
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
+  };
+  
+  const handleDeleteForm = async (formId: string) => {
+    if(window.confirm("Are you sure you want to delete this form?")){
+        try {
+            await dbDeleteForm(formId);
+            fetchForms();
+            toast.success("Form deleted successfully!");
+        } catch (error) {
+            console.error("Error deleting form:", error);
+            toast.error("Failed to delete form.");
+        }
+    }
+  };
+  
+  const handleUpdateForm = async (formId: string, updatedForm: GeneratedForm) => {
+      try {
+          await dbUpdateForm(formId, updatedForm);
+          fetchForms();
+          toast.success("Form updated successfully!");
+      } catch (error) {
+          console.error("Error updating form:", error);
+          toast.error("Failed to update form.");
+      }
+  };
+
+  const handlePreview = (form: GeneratedForm) => {
+      router.push(`/dashboard?view=preview&formId=${form.id}`);
+  };
+  
+  const handleEdit = (form: GeneratedForm) => {
+      router.push(`/dashboard?view=builder&formId=${form.id}`);
   };
 
   return (
@@ -537,7 +625,7 @@ const AIDashboard: React.FC<AIDashboardProps> = ({
         handleSendMessage={handleSendMessage}
         handleKeyPress={handleKeyPress}
       />}
-      {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} setActiveTab={setActiveTab} /></div>}
+      {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} setActiveTab={setActiveTab} isLoading={loadingForms} onDelete={handleDeleteForm} onUpdate={handleUpdateForm} onPreview={handlePreview} onEdit={handleEdit} /></div>}
       {activeTab === 'analytics' && <div className="overflow-y-auto h-full"><Analytics forms={forms}/></div>}
       {activeTab === 'settings' && (
         <div className="p-6">
