@@ -33,7 +33,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import AIDashboard from '@/components/ai-dashboard';
 import FormBuilder from '@/components/form-builder';
 import FormPreview from '@/components/form-preview';
@@ -204,6 +211,12 @@ export default function DashboardPage() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col">
+              <SheetHeader>
+                <SheetTitle>FormCraft AI</SheetTitle>
+                <SheetDescription>
+                  Navigate to different sections of the application.
+                </SheetDescription>
+              </SheetHeader>
               <nav className="grid gap-2 text-lg font-medium">
                 <Link
                   href="#"

@@ -11,6 +11,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { GeneratedForm, FormField } from '@/lib/ai';
+import { useAuth } from '@/contexts/AuthContext';
+import { updateForm } from '@/lib/database';
+import { toast } from 'sonner';
 
 interface FormBuilderProps {
   form: GeneratedForm;
@@ -44,8 +47,29 @@ const languages = [
 export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
   const [currentForm, setCurrentForm] = useState<GeneratedForm>(form);
   const [selectedField, setSelectedField] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const { user } = useAuth();
 
-  const updateForm = (updates: Partial<GeneratedForm>) => {
+  const handleSave = async () => {
+    if (!user) {
+        toast.error("You must be logged in to save a form.");
+        return;
+    }
+
+    setIsSaving(true);
+    try {
+        await updateForm(currentForm.id, currentForm);
+        toast.success("Form saved successfully!");
+        onSaveSuccess();
+    } catch (error) {
+        console.error("Error saving form:", error);
+        toast.error("Failed to save the form. Please try again.");
+    } finally {
+        setIsSaving(false);
+    }
+  };
+  
+    const updateForm = (updates: Partial<GeneratedForm>) => {
     setCurrentForm(prev => ({ ...prev, ...updates }));
   };
 
@@ -340,16 +364,18 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
           <Button
             variant="outline"
             onClick={() => {}}
+            disabled={isSaving}
           >
             <Eye className="mr-2 h-4 w-4" />
             Preview
           </Button>
           <Button
-            onClick={onSaveSuccess}
+            onClick={handleSave}
+            disabled={isSaving}
             className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
           >
             <Save className="mr-2 h-4 w-4" />
-            Save & Close
+            {isSaving ? 'Saving...' : 'Save & Close'}
           </Button>
         </div>
       </div>
