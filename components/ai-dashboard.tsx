@@ -19,6 +19,7 @@ import {
   Check,
   X,
   Share2,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserForms, saveForm, deleteForm as dbDeleteForm, updateForm as dbUpdateForm } from '@/lib/database';
@@ -28,6 +29,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 type ChatMessage = {
@@ -45,7 +56,6 @@ type FormItem = GeneratedForm & {
     published: boolean;
 };
 
-// ... (The rest of the component remains the same)
 // Local date formatting helper
 const formatDate = (dateString: string) =>
   new Date(dateString).toLocaleDateString('en-US', {
@@ -160,7 +170,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatMessages, isTyping, i
 interface FormsLibraryProps {
     forms: FormItem[];
     isLoading: boolean;
-    onDelete: (formId: string) => void;
+    onDelete: (form: FormItem) => void;
     onUpdateStatus: (form: FormItem) => void;
     onPreview: (form: GeneratedForm) => void;
     onEdit: (form: GeneratedForm) => void;
@@ -243,7 +253,7 @@ const FormsLibrary: React.FC<FormsLibraryProps> = ({ forms, isLoading, onDelete,
                                     <DropdownMenuItem onClick={() => onShare(form)}>
                                         <Share2 size={14} className="mr-2"/> Share
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="text-red-500" onClick={() => onDelete(form.id)}>
+                                    <DropdownMenuItem className="text-red-500 focus:bg-red-50 focus:text-red-600" onClick={() => onDelete(form)}>
                                         <Trash2 size={14} className="mr-2"/> Delete
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -257,7 +267,6 @@ const FormsLibrary: React.FC<FormsLibraryProps> = ({ forms, isLoading, onDelete,
     );
 };
 
-// ... (Keep Analytics component as it is)
 const Analytics = () => <div className="p-6"><h2 className="text-2xl font-bold">Analytics</h2><p>Analytics coming soon.</p></div>;
 const Settings = () => <div className="p-6"><h2 className="text-2xl font-bold">Settings</h2><p>Settings coming soon.</p></div>;
 
@@ -267,6 +276,7 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
   const router = useRouter();
   const [forms, setForms] = useState<FormItem[]>([]);
   const [loadingForms, setLoadingForms] = useState(true);
+  const [formToDelete, setFormToDelete] = useState<FormItem | null>(null);
 
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
     {
@@ -385,16 +395,17 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
     }
   };
   
-  const handleDeleteForm = async (formId: string) => {
-    if(window.confirm("Are you sure you want to delete this form? This action cannot be undone.")){
-        try {
-            await dbDeleteForm(formId);
-            fetchForms();
-            toast.success("Form deleted successfully!");
-        } catch (error) {
-            console.error("Error deleting form:", error);
-            toast.error("Failed to delete form.");
-        }
+  const confirmDeleteForm = async () => {
+    if (!formToDelete) return;
+    try {
+        await dbDeleteForm(formToDelete.id);
+        fetchForms(); // Refresh the list
+        toast.success(`Form "${formToDelete.title}" deleted successfully!`);
+    } catch (error) {
+        console.error("Error deleting form:", error);
+        toast.error("Failed to delete form.");
+    } finally {
+        setFormToDelete(null); // Close the dialog
     }
   };
   
@@ -440,9 +451,31 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
         handleSendMessage={handleSendMessage}
         handleKeyPress={handleKeyPress}
       />}
-      {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} isLoading={loadingForms} onDelete={handleDeleteForm} onUpdateStatus={handleUpdateStatus} onPreview={handlePreview} onEdit={handleEdit} onShare={handleShare}/></div>}
+      {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} isLoading={loadingForms} onDelete={setFormToDelete} onUpdateStatus={handleUpdateStatus} onPreview={handlePreview} onEdit={handleEdit} onShare={handleShare}/></div>}
       {activeTab === 'analytics' && <Analytics />}
       {activeTab === 'settings' && <Settings />}
+
+      <AlertDialog open={!!formToDelete} onOpenChange={(isOpen) => !isOpen && setFormToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="text-red-500" />
+              Are you absolutely sure?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the form 
+              <span className="font-semibold text-foreground"> "{formToDelete?.title}" </span> 
+              and all of its associated data.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteForm} className="bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white">
+              Yes, delete form
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
