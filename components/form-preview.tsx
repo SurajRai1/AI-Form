@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircle, Send, Sparkles } from 'lucide-react';
+import { CheckCircle, Send, Sparkles, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { GeneratedForm, FormField } from '@/lib/ai';
+import { cn } from '@/lib/utils';
+
 
 interface FormPreviewProps {
   form: GeneratedForm;
@@ -53,11 +59,13 @@ export default function FormPreview({ form, onSubmit, readOnly = false }: FormPr
       if (field.validation) {
         const value = formData[field.id];
         if (value) {
-          if (field.validation.min && value.length < field.validation.min) {
-            newErrors[field.id] = `Minimum ${field.validation.min} characters required`;
-          }
-          if (field.validation.max && value.length > field.validation.max) {
-            newErrors[field.id] = `Maximum ${field.validation.max} characters allowed`;
+          if (field.type === "text" || field.type === "textarea" || field.type === "password"){
+            if (field.validation.min && value.length < field.validation.min) {
+              newErrors[field.id] = `Minimum ${field.validation.min} characters required`;
+            }
+            if (field.validation.max && value.length > field.validation.max) {
+              newErrors[field.id] = `Maximum ${field.validation.max} characters allowed`;
+            }
           }
           if (field.validation.pattern) {
             const regex = new RegExp(field.validation.pattern);
@@ -94,109 +102,128 @@ export default function FormPreview({ form, onSubmit, readOnly = false }: FormPr
     }
   };
 
-  const renderField = (field: FormField) => {
-    const value = formData[field.id];
-    const error = errors[field.id];
-    
-    const commonProps = {
-      id: field.id,
-      value: value || '',
-      onChange: (e: any) => handleFieldChange(field.id, e.target.value),
-      disabled: readOnly,
-      className: `w-full ${error ? 'border-red-500' : ''}`,
-      placeholder: field.placeholder,
+    const renderField = (field: FormField) => {
+        const value = formData[field.id];
+        const error = errors[field.id];
+
+        const commonInputProps = {
+            id: field.id,
+            value: value || '',
+            onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => handleFieldChange(field.id, e.target.value),
+            disabled: readOnly,
+            className: `w-full ${error ? 'border-red-500' : ''}`,
+            placeholder: field.placeholder,
+        };
+
+        switch (field.type) {
+            case 'text':
+            case 'email':
+            case 'number':
+            case 'password':
+            case 'date':
+            case 'file':
+                return <Input {...commonInputProps} type={field.type} />;
+            case 'textarea':
+                return <Textarea {...commonInputProps} rows={4} />;
+            case 'select':
+                return (
+                    <Select value={value || ''} onValueChange={(val) => handleFieldChange(field.id, val)} disabled={readOnly}>
+                        <SelectTrigger className={error ? 'border-red-500' : ''}>
+                            <SelectValue placeholder={field.placeholder} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {field.options?.map((option, index) => (
+                                <SelectItem key={index} value={option}>
+                                    {option}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                );
+            case 'radio':
+                return (
+                    <RadioGroup value={value} onValueChange={(val) => handleFieldChange(field.id, val)} disabled={readOnly} className="space-y-2">
+                        {field.options?.map((option, index) => (
+                            <div key={index} className="flex items-center space-x-2">
+                                <RadioGroupItem value={option} id={`${field.id}-${index}`} />
+                                <Label htmlFor={`${field.id}-${index}`} className="font-normal">{option}</Label>
+                            </div>
+                        ))}
+                    </RadioGroup>
+                );
+            case 'checkbox':
+                return (
+                    <div className="space-y-2">
+                        {field.options?.map((option, index) => (
+                            <div key={index} className="flex items-center space-x-2">
+                                <Checkbox
+                                    id={`${field.id}-${index}`}
+                                    checked={Array.isArray(value) && value.includes(option)}
+                                    onCheckedChange={(checked) => {
+                                        const currentValues = Array.isArray(value) ? value : [];
+                                        const newValues = checked
+                                            ? [...currentValues, option]
+                                            : currentValues.filter(v => v !== option);
+                                        handleFieldChange(field.id, newValues);
+                                    }}
+                                    disabled={readOnly}
+                                />
+                                <Label htmlFor={`${field.id}-${index}`} className="font-normal">{option}</Label>
+                            </div>
+                        ))}
+                    </div>
+                );
+            case 'switch':
+                return (
+                    <div className="flex items-center space-x-2">
+                        <Switch id={field.id} checked={!!value} onCheckedChange={(checked) => handleFieldChange(field.id, checked)} disabled={readOnly} />
+                        <Label htmlFor={field.id}>{field.placeholder || "Toggle"}</Label>
+                    </div>
+                );
+            case 'slider':
+                return (
+                    <div className="flex items-center gap-4 pt-2">
+                        <Slider
+                            id={field.id}
+                            value={[value ?? field.validation?.min ?? 0]}
+                            onValueChange={([val]) => handleFieldChange(field.id, val)}
+                            min={field.validation?.min}
+                            max={field.validation?.max}
+                            step={field.validation?.step}
+                            disabled={readOnly}
+                        />
+                         <span className="text-sm font-medium w-12 text-center">{value ?? field.validation?.min ?? 0}</span>
+                    </div>
+                );
+            case 'rating':
+                const [hoverRating, setHoverRating] = useState(0);
+                const maxRating = field.validation?.max || 5;
+                return (
+                    <div className="flex items-center gap-1">
+                        {[...Array(maxRating)].map((_, index) => {
+                            const ratingValue = index + 1;
+                            return (
+                                <Star
+                                    key={ratingValue}
+                                    className={cn('h-8 w-8 transition-colors',
+                                        readOnly ? 'cursor-default' : 'cursor-pointer',
+                                        ratingValue <= (hoverRating || value || 0)
+                                            ? 'text-yellow-400 fill-yellow-400'
+                                            : 'text-gray-300 dark:text-gray-600'
+                                    )}
+                                    onClick={() => !readOnly && handleFieldChange(field.id, ratingValue)}
+                                    onMouseEnter={() => !readOnly && setHoverRating(ratingValue)}
+                                    onMouseLeave={() => !readOnly && setHoverRating(0)}
+                                />
+                            );
+                        })}
+                    </div>
+                );
+            default:
+                return <Input {...commonInputProps} type="text" />;
+        }
     };
 
-    switch (field.type) {
-      case 'text':
-        return <Input {...commonProps} type="text" />;
-      
-      case 'email':
-        return <Input {...commonProps} type="email" />;
-      
-      case 'number':
-        return <Input {...commonProps} type="number" />;
-      
-      case 'textarea':
-        return <Textarea {...commonProps} rows={4} />;
-      
-      case 'select':
-        return (
-          <Select value={value || ''} onValueChange={(val) => handleFieldChange(field.id, val)} disabled={readOnly}>
-            <SelectTrigger className={error ? 'border-red-500' : ''}>
-              <SelectValue placeholder={field.placeholder} />
-            </SelectTrigger>
-            <SelectContent>
-              {field.options?.map((option, index) => (
-                <SelectItem key={index} value={option}>
-                  {option}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        );
-      
-      case 'radio':
-        return (
-          <div className="space-y-2">
-            {field.options?.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  id={`${field.id}-${index}`}
-                  name={field.id}
-                  value={option}
-                  checked={value === option}
-                  onChange={(e) => handleFieldChange(field.id, e.target.value)}
-                  disabled={readOnly}
-                  className="text-blue-600 focus:ring-blue-500"
-                />
-                <Label htmlFor={`${field.id}-${index}`} className="text-sm font-normal">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </div>
-        );
-      
-      case 'checkbox':
-        return (
-          <div className="space-y-2">
-            {field.options?.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id={`${field.id}-${index}`}
-                  value={option}
-                  checked={Array.isArray(value) ? value.includes(option) : false}
-                  onChange={(e) => {
-                    const currentValues = Array.isArray(value) ? value : [];
-                    const newValues = e.target.checked
-                      ? [...currentValues, option]
-                      : currentValues.filter(v => v !== option);
-                    handleFieldChange(field.id, newValues);
-                  }}
-                  disabled={readOnly}
-                  className="text-blue-600 focus:ring-blue-500"
-                />
-                <Label htmlFor={`${field.id}-${index}`} className="text-sm font-normal">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </div>
-        );
-      
-      case 'date':
-        return <Input {...commonProps} type="date" />;
-      
-      case 'file':
-        return <Input {...commonProps} type="file" />;
-      
-      default:
-        return <Input {...commonProps} type="text" />;
-    }
-  };
 
   if (isSubmitted) {
     return (
@@ -256,7 +283,7 @@ export default function FormPreview({ form, onSubmit, readOnly = false }: FormPr
                 {renderField(field)}
                 
                 {errors[field.id] && (
-                  <p className="text-sm text-red-600 dark:text-red-400">
+                  <p className="text-sm text-red-600 dark:text-red-400 pt-1">
                     {errors[field.id]}
                   </p>
                 )}

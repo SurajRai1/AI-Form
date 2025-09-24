@@ -8,7 +8,7 @@ const openai = env.OPENAI_API_KEY ? new OpenAI({
 
 export interface FormField {
   id: string;
-  type: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'file';
+  type: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'file' | 'password' | 'slider' | 'switch' | 'rating';
   label: string;
   placeholder?: string;
   required: boolean;
@@ -16,6 +16,7 @@ export interface FormField {
   validation?: {
     min?: number;
     max?: number;
+    step?: number;
     pattern?: string;
   };
 }
@@ -57,26 +58,28 @@ export class AIService {
       const systemPrompt = `You are an expert form designer. Generate 2 different form designs based on the user's description. Each form should be well-structured, user-friendly, and optimized for the specified language.
 
 Requirements:
-- Create 2 distinct form designs
-- Each form should have 5-10 relevant fields
-- Use appropriate field types (text, email, number, textarea, select, radio, checkbox, date, file)
-- Include proper validation rules
-- Make fields required when necessary
-- Use clear, concise labels
-- Generate in the specified language: ${language}
+- Create 2 distinct form designs.
+- Each form should have 5-10 relevant fields.
+- Use appropriate field types: text, email, number, textarea, select, radio, checkbox, date, file, password, slider, switch, rating.
+- For 'rating' fields, use a 'max' validation between 3 and 10.
+- For 'slider' fields, define 'min', 'max', and 'step' validation properties.
+- Include proper validation rules where appropriate (e.g., min/max length for text).
+- Make fields required when necessary.
+- Use clear, concise labels and placeholders.
+- Generate all text content in the specified language: ${language}.
 
-Return the response as a JSON array with 2 form objects.`
+Return the response as a valid JSON array of 2 form objects.`
 
       const userPrompt = `Create 2 different forms for: ${prompt}`
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 3000,
       })
 
       const response = completion.choices[0]?.message?.content
@@ -101,6 +104,8 @@ Return the response as a JSON array with 2 form objects.`
     }
   }
 
+  // --- Other methods remain unchanged ---
+
   static async translateForm(form: GeneratedForm, targetLanguage: string): Promise<GeneratedForm> {
     if (!openai) {
       // Fallback: Return the same form with updated language
@@ -123,7 +128,7 @@ Keep the technical structure (field types, validation rules, etc.) unchanged.`
 ${JSON.stringify(form, null, 2)}`
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -170,7 +175,7 @@ Provide insights that are actionable and easy to understand for non-technical us
 ${JSON.stringify(formData, null, 2)}`
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-40-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -216,7 +221,7 @@ Form Data: ${JSON.stringify(formData, null, 2)}
 Please provide a clear, simple explanation.`
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
@@ -236,39 +241,90 @@ Please provide a clear, simple explanation.`
   private static generateSampleForms(prompt: string, language: string): GeneratedForm[] {
     const baseForm = {
       id: crypto.randomUUID(),
-      title: 'Sample Form',
-      description: 'This is a sample form generated when AI is not available.',
+      title: 'Sample Feedback Form',
+      description: 'This is a sample form generated because the AI service is currently unavailable. Please provide your valuable feedback.',
       language,
       theme: 'modern' as const,
       fields: [
         {
           id: crypto.randomUUID(),
           type: 'text' as const,
-          label: 'Name',
-          placeholder: 'Enter your name',
+          label: 'Full Name',
+          placeholder: 'e.g., John Doe',
           required: true,
         },
         {
           id: crypto.randomUUID(),
           type: 'email' as const,
-          label: 'Email',
-          placeholder: 'Enter your email',
+          label: 'Email Address',
+          placeholder: 'e.g., john.doe@example.com',
           required: true,
         },
         {
           id: crypto.randomUUID(),
+          type: 'rating' as const,
+          label: 'Overall Satisfaction',
+          required: true,
+          validation: { max: 5 }
+        },
+        {
+          id: crypto.randomUUID(),
+          type: 'select' as const,
+          label: 'How did you hear about us?',
+          placeholder: 'Select an option',
+          required: false,
+          options: ['Social Media', 'Friend or Colleague', 'Search Engine', 'Other']
+        },
+        {
+          id: crypto.randomUUID(),
+          type: 'switch' as const,
+          label: 'Subscribe to our newsletter?',
+          required: false,
+        },
+        {
+          id: crypto.randomUUID(),
           type: 'textarea' as const,
-          label: 'Comments',
-          placeholder: 'Share your thoughts...',
+          label: 'Additional Comments',
+          placeholder: 'Share your thoughts, suggestions, or concerns...',
           required: false,
         },
       ],
     }
 
-    return [
-      { ...baseForm, id: crypto.randomUUID(), title: 'Form Option 1' },
-      { ...baseForm, id: crypto.randomUUID(), title: 'Form Option 2' },
+    const secondForm = JSON.parse(JSON.stringify(baseForm)); // deep copy
+    secondForm.id = crypto.randomUUID();
+    secondForm.title = 'Sample Contact Form';
+    secondForm.theme = 'classic';
+    secondForm.fields = [
+        {
+            id: crypto.randomUUID(),
+            type: 'text' as const,
+            label: 'Your Name',
+            required: true,
+        },
+        {
+            id: crypto.randomUUID(),
+            type: 'email' as const,
+            label: 'Your Email',
+            required: true,
+        },
+        {
+            id: crypto.randomUUID(),
+            type: 'slider' as const,
+            label: 'Urgency',
+            required: true,
+            validation: { min: 1, max: 5, step: 1}
+        },
+         {
+            id: crypto.randomUUID(),
+            type: 'textarea' as const,
+            label: 'Your Message',
+            required: true,
+        },
     ]
+
+
+    return [baseForm, secondForm];
   }
 
   private static generateSampleAnalytics(formData: any): FormAnalytics {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, Trash2, GripVertical, Settings, Eye, Save, Globe, Sparkles, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Settings, Eye, Save, Globe, Sparkles, ArrowLeft, Star, ToggleLeft, SlidersHorizontal, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 import { GeneratedForm, FormField } from '@/lib/ai';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateForm } from '@/lib/database';
@@ -23,12 +24,16 @@ interface FormBuilderProps {
 const fieldTypes = [
   { value: 'text', label: 'Text Input', icon: '📝' },
   { value: 'email', label: 'Email', icon: '📧' },
+  { value: 'password', label: 'Password', icon: <Lock className="h-4 w-4" /> },
   { value: 'number', label: 'Number', icon: '🔢' },
   { value: 'textarea', label: 'Text Area', icon: '📄' },
   { value: 'select', label: 'Dropdown', icon: '📋' },
   { value: 'radio', label: 'Radio Buttons', icon: '🔘' },
   { value: 'checkbox', label: 'Checkboxes', icon: '☑️' },
   { value: 'date', label: 'Date Picker', icon: '📅' },
+  { value: 'switch', label: 'Switch', icon: <ToggleLeft className="h-4 w-4" /> },
+  { value: 'slider', label: 'Slider', icon: <SlidersHorizontal className="h-4 w-4" /> },
+  { value: 'rating', label: 'Rating', icon: <Star className="h-4 w-4" /> },
   { value: 'file', label: 'File Upload', icon: '📎' },
 ];
 
@@ -171,63 +176,82 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
           </div>
 
           {/* Placeholder */}
-          <div className="space-y-2">
-            <Label>Placeholder</Label>
-            <Input
-              value={field.placeholder || ''}
-              onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
-              placeholder="Enter placeholder text"
-            />
-          </div>
-
+          {['text', 'email', 'number', 'textarea', 'password'].includes(field.type) && (
+            <div className="space-y-2">
+              <Label>Placeholder</Label>
+              <Input
+                value={field.placeholder || ''}
+                onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
+                placeholder="Enter placeholder text"
+              />
+            </div>
+          )}
+          
           {/* Options for select/radio/checkbox */}
           {(field.type === 'select' || field.type === 'radio' || field.type === 'checkbox') && (
             <div className="space-y-2">
               <Label>Options</Label>
-              <Textarea
-                value={field.options?.join('\n') || ''}
-                onChange={(e) => updateField(field.id, {
-                  options: e.target.value.split('\n').filter(opt => opt.trim())
-                })}
-                placeholder="Enter options (one per line)"
-                rows={3}
-              />
+              <div className="space-y-2">
+                {field.options?.map((option, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={option}
+                      onChange={(e) => {
+                        const newOptions = [...(field.options || [])];
+                        newOptions[index] = e.target.value;
+                        updateField(field.id, { options: newOptions });
+                      }}
+                    />
+                    <Button variant="ghost" size="icon" className="shrink-0" onClick={() => {
+                        const newOptions = [...(field.options || [])];
+                        newOptions.splice(index, 1);
+                        updateField(field.id, { options: newOptions });
+                    }}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+               <Button variant="outline" size="sm" className="mt-2" onClick={() => {
+                  const newOptions = [...(field.options || []), `Option ${(field.options?.length || 0) + 1}`];
+                  updateField(field.id, { options: newOptions });
+              }}>
+                  <Plus className="h-4 w-4 mr-2"/> Add Option
+              </Button>
             </div>
           )}
 
+          {/* Slider Settings */}
+          {field.type === 'slider' && (
+             <div className="space-y-2">
+                <Label>Slider Configuration</Label>
+                <div className="grid grid-cols-3 gap-2">
+                    <Input type="number" placeholder="Min" value={field.validation?.min ?? 0} onChange={e => updateField(field.id, { validation: { ...field.validation, min: Number(e.target.value) }})} />
+                    <Input type="number" placeholder="Max" value={field.validation?.max ?? 100} onChange={e => updateField(field.id, { validation: { ...field.validation, max: Number(e.target.value) }})} />
+                    <Input type="number" placeholder="Step" value={field.validation?.step ?? 1} onChange={e => updateField(field.id, { validation: { ...field.validation, step: Number(e.target.value) }})} />
+                </div>
+             </div>
+          )}
+
+           {/* Rating Settings */}
+           {field.type === 'rating' && (
+             <div className="space-y-2">
+                <Label>Max Rating</Label>
+                <Input type="number" placeholder="Max" value={field.validation?.max ?? 5} max={10} min={3} onChange={e => updateField(field.id, { validation: { ...field.validation, max: Number(e.target.value) }})} />
+             </div>
+          )}
+
+
           {/* Required */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 pt-2">
             <Switch
+              id={`required-${field.id}`}
               checked={field.required}
               onCheckedChange={(checked) => updateField(field.id, { required: checked })}
             />
-            <Label>Required field</Label>
+            <Label htmlFor={`required-${field.id}`}>Required field</Label>
           </div>
 
-          {/* Validation */}
-          {(field.type === 'number' || field.type === 'text') && (
-            <div className="space-y-2">
-              <Label>Validation</Label>
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="number"
-                  placeholder="Min"
-                  value={field.validation?.min || ''}
-                  onChange={(e) => updateField(field.id, {
-                    validation: { ...field.validation, min: e.target.value ? Number(e.target.value) : undefined }
-                  })}
-                />
-                <Input
-                  type="number"
-                  placeholder="Max"
-                  value={field.validation?.max || ''}
-                  onChange={(e) => updateField(field.id, {
-                    validation: { ...field.validation, max: e.target.value ? Number(e.target.value) : undefined }
-                  })}
-                />
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
     );
@@ -287,57 +311,46 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
         <div className="space-y-2">
           <Label className="text-sm font-medium">{field.label}</Label>
           
-          {field.type === 'text' && (
-            <Input placeholder={field.placeholder} disabled />
+          {['text', 'email', 'number', 'textarea', 'password', 'date', 'file'].includes(field.type) && (
+            <Input type={field.type} placeholder={field.placeholder} disabled />
           )}
-          {field.type === 'email' && (
-            <Input type="email" placeholder={field.placeholder} disabled />
+
+          {field.type === 'switch' && (
+            <div className="flex items-center space-x-2">
+                <Switch disabled />
+                <Label>{field.placeholder || "Toggle"}</Label>
+            </div>
           )}
-          {field.type === 'number' && (
-            <Input type="number" placeholder={field.placeholder} disabled />
+
+          {field.type === 'slider' && (
+             <Slider defaultValue={[field.validation?.min || 50]} min={field.validation?.min || 0} max={field.validation?.max || 100} step={field.validation?.step || 1} disabled />
           )}
-          {field.type === 'textarea' && (
-            <Textarea placeholder={field.placeholder} disabled rows={3} />
+
+          {field.type === 'rating' && (
+            <div className="flex items-center gap-1">
+              {[...Array(field.validation?.max || 5)].map((_, i) => (
+                <Star key={i} className="h-6 w-6 text-gray-300" />
+              ))}
+            </div>
           )}
+          
           {field.type === 'select' && (
             <Select disabled>
               <SelectTrigger>
                 <SelectValue placeholder={field.placeholder} />
               </SelectTrigger>
-              <SelectContent>
-                {field.options?.map((option, index) => (
-                  <SelectItem key={index} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
             </Select>
           )}
-          {field.type === 'radio' && (
+
+          { (field.type === 'radio' || field.type === 'checkbox') && (
             <div className="space-y-2">
               {field.options?.map((option, index) => (
                 <div key={index} className="flex items-center space-x-2">
-                  <input type="radio" disabled />
-                  <Label className="text-sm">{option}</Label>
+                  <input type={field.type} disabled />
+                  <Label className="text-sm font-normal">{option}</Label>
                 </div>
               ))}
             </div>
-          )}
-          {field.type === 'checkbox' && (
-            <div className="space-y-2">
-              {field.options?.map((option, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <input type="checkbox" disabled />
-                  <Label className="text-sm">{option}</Label>
-                </div>
-              ))}
-            </div>
-          )}
-          {field.type === 'date' && (
-            <Input type="date" disabled />
-          )}
-          {field.type === 'file' && (
-            <Input type="file" disabled />
           )}
         </div>
       </div>
