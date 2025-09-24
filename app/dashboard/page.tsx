@@ -69,7 +69,7 @@ export default function DashboardPage() {
               <span className="sr-only">Toggle notifications</span>
             </Button>
           </div>
-          <div className="flex-1">
+          <div className="flex-1 overflow-y-auto">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
               <button
                 onClick={() => setActiveTab('chat')}
@@ -135,7 +135,7 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      <div className="flex flex-col">
+      <div className="flex flex-col max-h-screen overflow-hidden">
         {/* Mobile Header */}
         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
           <Sheet>
@@ -253,7 +253,7 @@ export default function DashboardPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main className="flex flex-1 flex-col h-full">
+        <main className="flex-1 overflow-hidden">
           {renderContent()}
         </main>
       </div>

@@ -114,7 +114,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatMessages, isTyping, i
                 <div ref={messagesEndRef} />
             </div>
 
-            <div className="p-6 border-t bg-white/80 dark:bg-slate-900/80 backdrop-blur">
+            <div className="p-6 border-t bg-white/80 dark:bg-slate-900/80 backdrop-blur shrink-0">
                 <div className="flex space-x-4">
                 <div className="flex-1 relative">
                     <textarea
@@ -528,7 +528,7 @@ const AIDashboard: React.FC<AIDashboardProps> = ({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full">
+    <div className="flex flex-col h-full">
       {activeTab === 'chat' && <ChatInterface 
         chatMessages={chatMessages}
         isTyping={isTyping}
@@ -537,8 +537,8 @@ const AIDashboard: React.FC<AIDashboardProps> = ({
         handleSendMessage={handleSendMessage}
         handleKeyPress={handleKeyPress}
       />}
-      {activeTab === 'forms' && <FormsLibrary forms={forms} setActiveTab={setActiveTab} />}
-      {activeTab === 'analytics' && <Analytics forms={forms}/>}
+      {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} setActiveTab={setActiveTab} /></div>}
+      {activeTab === 'analytics' && <div className="overflow-y-auto h-full"><Analytics forms={forms}/></div>}
       {activeTab === 'settings' && (
         <div className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
