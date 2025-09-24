@@ -32,13 +32,19 @@ export const getUserForms = async (userId: string) => {
 export const getFormById = async (formId: string) => {
   const { data, error } = await supabase
     .from('forms')
-    .select('content')
+    .select('id, content') // Fetch both the UUID and the content
     .eq('id', formId)
     .single();
 
   if (error) throw new Error(error.message);
-  return data.content; 
+
+  // Overwrite the temporary ID in the content with the correct database UUID
+  const form = data.content;
+  form.id = data.id;
+  
+  return form;
 };
+
 
 export const updateForm = async (formId: string, form: GeneratedForm) => {
     const { data, error } = await supabase

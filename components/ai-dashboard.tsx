@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import Link from 'next/link'; // <--- THIS WAS THE MISSING IMPORT
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Send,
@@ -440,7 +440,7 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
         handleSendMessage={handleSendMessage}
         handleKeyPress={handleKeyPress}
       />}
-      {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} setActiveTab={setActiveTab} isLoading={loadingForms} onDelete={handleDeleteForm} onUpdateStatus={handleUpdateStatus} onPreview={handlePreview} onEdit={handleEdit} onShare={handleShare}/></div>}
+      {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} isLoading={loadingForms} onDelete={handleDeleteForm} onUpdateStatus={handleUpdateStatus} onPreview={handlePreview} onEdit={handleEdit} onShare={handleShare}/></div>}
       {activeTab === 'analytics' && <Analytics />}
       {activeTab === 'settings' && <Settings />}
     </div>

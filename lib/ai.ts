@@ -85,13 +85,13 @@ Return the response as a JSON array with 2 form objects.`
       }
 
       const forms = JSON.parse(response)
-      return forms.map((form: any, index: number) => ({
+      return forms.map((form: any) => ({
         ...form,
-        id: `form-${Date.now()}-${index}`,
+        id: crypto.randomUUID(),
         language,
         fields: form.fields.map((field: any) => ({
           ...field,
-          id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: crypto.randomUUID(),
         })),
       }))
     } catch (error) {
@@ -235,28 +235,28 @@ Please provide a clear, simple explanation.`
   // Fallback methods for when AI is not available
   private static generateSampleForms(prompt: string, language: string): GeneratedForm[] {
     const baseForm = {
-      id: `form-${Date.now()}`,
+      id: crypto.randomUUID(),
       title: 'Sample Form',
       description: 'This is a sample form generated when AI is not available.',
       language,
       theme: 'modern' as const,
       fields: [
         {
-          id: `field-${Date.now()}-1`,
+          id: crypto.randomUUID(),
           type: 'text' as const,
           label: 'Name',
           placeholder: 'Enter your name',
           required: true,
         },
         {
-          id: `field-${Date.now()}-2`,
+          id: crypto.randomUUID(),
           type: 'email' as const,
           label: 'Email',
           placeholder: 'Enter your email',
           required: true,
         },
         {
-          id: `field-${Date.now()}-3`,
+          id: crypto.randomUUID(),
           type: 'textarea' as const,
           label: 'Comments',
           placeholder: 'Share your thoughts...',
@@ -266,8 +266,8 @@ Please provide a clear, simple explanation.`
     }
 
     return [
-      { ...baseForm, id: `form-${Date.now()}-0`, title: 'Form Option 1' },
-      { ...baseForm, id: `form-${Date.now()}-1`, title: 'Form Option 2' },
+      { ...baseForm, id: crypto.randomUUID(), title: 'Form Option 1' },
+      { ...baseForm, id: crypto.randomUUID(), title: 'Form Option 2' },
     ]
   }
 

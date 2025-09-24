@@ -40,7 +40,7 @@ const themes = [
 ];
 
 const languages = [
-  'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 
+  'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese',
   'Russian', 'Japanese', 'Korean', 'Chinese', 'Arabic', 'Hindi'
 ];
 
@@ -69,7 +69,7 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
     }
   };
   
-    const updateForm = (updates: Partial<GeneratedForm>) => {
+  const updateCurrentForm = (updates: Partial<GeneratedForm>) => {
     setCurrentForm(prev => ({ ...prev, ...updates }));
   };
 
@@ -92,7 +92,7 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
   const updateField = (fieldId: string, updates: Partial<FormField>) => {
     setCurrentForm(prev => ({
       ...prev,
-      fields: prev.fields.map(field => 
+      fields: prev.fields.map(field =>
         field.id === fieldId ? { ...field, ...updates } : field
       )
     }));
@@ -186,8 +186,8 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
               <Label>Options</Label>
               <Textarea
                 value={field.options?.join('\n') || ''}
-                onChange={(e) => updateField(field.id, { 
-                  options: e.target.value.split('\n').filter(opt => opt.trim()) 
+                onChange={(e) => updateField(field.id, {
+                  options: e.target.value.split('\n').filter(opt => opt.trim())
                 })}
                 placeholder="Enter options (one per line)"
                 rows={3}
@@ -213,7 +213,7 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
                   type="number"
                   placeholder="Min"
                   value={field.validation?.min || ''}
-                  onChange={(e) => updateField(field.id, { 
+                  onChange={(e) => updateField(field.id, {
                     validation: { ...field.validation, min: e.target.value ? Number(e.target.value) : undefined }
                   })}
                 />
@@ -221,7 +221,7 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
                   type="number"
                   placeholder="Max"
                   value={field.validation?.max || ''}
-                  onChange={(e) => updateField(field.id, { 
+                  onChange={(e) => updateField(field.id, {
                     validation: { ...field.validation, max: e.target.value ? Number(e.target.value) : undefined }
                   })}
                 />
@@ -240,8 +240,8 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
       <div
         key={field.id}
         className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-          isSelected 
-            ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/50' 
+          isSelected
+            ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/50'
             : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
         }`}
         onClick={() => setSelectedField(field.id)}
@@ -395,7 +395,7 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
                 <Label>Form Title</Label>
                 <Input
                   value={currentForm.title}
-                  onChange={(e) => updateForm({ title: e.target.value })}
+                  onChange={(e) => updateCurrentForm({ title: e.target.value })}
                   placeholder="Enter form title"
                 />
               </div>
@@ -404,7 +404,7 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
                 <Label>Description</Label>
                 <Textarea
                   value={currentForm.description}
-                  onChange={(e) => updateForm({ description: e.target.value })}
+                  onChange={(e) => updateCurrentForm({ description: e.target.value })}
                   placeholder="Enter form description"
                   rows={3}
                 />
@@ -412,7 +412,7 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
 
               <div className="space-y-2">
                 <Label>Theme</Label>
-                <Select value={currentForm.theme} onValueChange={(value) => updateForm({ theme: value as any })}>
+                <Select value={currentForm.theme} onValueChange={(value) => updateCurrentForm({ theme: value as any })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {themes.map(theme => (
@@ -429,7 +429,7 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
 
               <div className="space-y-2">
                 <Label>Language</Label>
-                <Select value={currentForm.language} onValueChange={(value) => updateForm({ language: value })}>
+                <Select value={currentForm.language} onValueChange={(value) => updateCurrentForm({ language: value })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {languages.map(lang => (
