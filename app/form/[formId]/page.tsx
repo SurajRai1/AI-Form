@@ -3,8 +3,15 @@ import { getFormById } from '@/lib/database';
 import PublicFormClient from '@/components/public-form-client';
 import { notFound } from 'next/navigation';
 
+// Define a type for the component's props
+interface PublicFormPageProps {
+  params: {
+    formId: string;
+  };
+}
+
 // This is the server component that fetches data for each page when a user visits the URL.
-export default async function PublicFormPage({ params }: { params: { formId: string } }) {
+export default async function PublicFormPage({ params }: PublicFormPageProps) {
   try {
     const form = await getFormById(params.formId);
 
