@@ -19,7 +19,9 @@ import {
   Settings as SettingsIcon,
   BarChart3,
   ArrowLeft,
-  Plus
+  Plus,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import {
   Card,
@@ -45,6 +47,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import AIDashboard from '@/components/ai-dashboard';
 import FormBuilder from '@/components/form-builder';
 import FormPreview from '@/components/form-preview';
@@ -54,6 +62,8 @@ import { GeneratedForm } from '@/lib/ai';
 import { getFormById, getFormSubmissions, getUserConversations, createConversation } from '@/lib/database';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { cn } from '@/lib/utils';
+
 
 // A wrapper to use searchParams
 function DashboardContent() {
@@ -168,8 +178,8 @@ function DashboardContent() {
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<any[]>([]);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const fetchConversations = useCallback(async () => {
     if (!user) return;
@@ -200,79 +210,114 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+    <TooltipProvider>
+    <div className={cn(
+        "grid min-h-screen w-full transition-all duration-300",
+        isSidebarCollapsed ? "md:grid-cols-[80px_1fr]" : "md:grid-cols-[280px_1fr]"
+    )}>
       {/* Desktop Sidebar */}
       <div className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
               <Package2 className="h-6 w-6" />
-              <span className="">FormCraft AI</span>
+              {!isSidebarCollapsed && <span className="">FormCraft AI</span>}
             </Link>
-            <Button variant="outline" size="icon" className="ml-auto h-8 w-8">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Toggle notifications</span>
+            <Button 
+                variant="outline" 
+                size="icon" 
+                className="ml-auto h-8 w-8"
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            >
+              {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+              <span className="sr-only">Toggle sidebar</span>
             </Button>
           </div>
-          <div className="p-4">
-            <Button className="w-full" onClick={handleNewChat}>
-              <Plus size={16} className="mr-2" />
-              New Chat
-            </Button>
+          <div className={cn("p-4", isSidebarCollapsed && "px-2")}>
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button className="w-full" onClick={handleNewChat} size={isSidebarCollapsed ? "icon" : "default"}>
+                        <Plus size={16} className={cn(!isSidebarCollapsed && "mr-2")} />
+                        {!isSidebarCollapsed && "New Chat"}
+                    </Button>
+                </TooltipTrigger>
+                {isSidebarCollapsed && <TooltipContent side="right">New Chat</TooltipContent>}
+            </Tooltip>
           </div>
           <div className="flex-1 overflow-y-auto">
-            <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <Link
-                href="/dashboard?tab=forms"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <FileText className="h-4 w-4" />
-                My Forms
-              </Link>
-              <Link
-                href="/dashboard?tab=analytics"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <BarChart3 className="h-4 w-4" />
-                Analytics
-              </Link>
-              <Link
-                href="/dashboard?tab=settings"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <SettingsIcon className="h-4 w-4" />
-                Settings
-              </Link>
+            <nav className={cn("grid items-start px-2 text-sm font-medium lg:px-4", isSidebarCollapsed && "px-2")}>
+              <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Link
+                        href="/dashboard?tab=forms"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                      >
+                        <FileText className="h-4 w-4" />
+                        {!isSidebarCollapsed && "My Forms"}
+                      </Link>
+                  </TooltipTrigger>
+                  {isSidebarCollapsed && <TooltipContent side="right">My Forms</TooltipContent>}
+              </Tooltip>
+              <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Link
+                        href="/dashboard?tab=analytics"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                      >
+                        <BarChart3 className="h-4 w-4" />
+                        {!isSidebarCollapsed && "Analytics"}
+                      </Link>
+                  </TooltipTrigger>
+                  {isSidebarCollapsed && <TooltipContent side="right">Analytics</TooltipContent>}
+              </Tooltip>
+              <Tooltip>
+                  <TooltipTrigger asChild>
+                      <Link
+                        href="/dashboard?tab=settings"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                      >
+                        <SettingsIcon className="h-4 w-4" />
+                        {!isSidebarCollapsed && "Settings"}
+                      </Link>
+                  </TooltipTrigger>
+                  {isSidebarCollapsed && <TooltipContent side="right">Settings</TooltipContent>}
+              </Tooltip>
               <div className="my-4 border-t"></div>
               {/* Conversation History */}
               {conversations.map(convo => (
-                <Link
-                  key={convo.id}
-                  href={`/dashboard?tab=chat&conversationId=${convo.id}`}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  {convo.title}
-                </Link>
+                <Tooltip key={convo.id}>
+                    <TooltipTrigger asChild>
+                        <Link
+                          href={`/dashboard?tab=chat&conversationId=${convo.id}`}
+                          className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          {!isSidebarCollapsed && <span className="truncate">{convo.title}</span>}
+                        </Link>
+                    </TooltipTrigger>
+                    {isSidebarCollapsed && <TooltipContent side="right">{convo.title}</TooltipContent>}
+                </Tooltip>
               ))}
             </nav>
           </div>
-          <div className="mt-auto p-4">
-            <Card>
-              <CardHeader className="p-2 pt-0 md:p-4">
-                <CardTitle>Upgrade to Pro</CardTitle>
-                <CardDescription>
-                  Unlock all features and get unlimited access to our support
-                  team.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
-                <Button size="sm" className="w-full">
-                  Upgrade
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          {!isSidebarCollapsed && (
+            <div className="mt-auto p-4">
+                <Card>
+                  <CardHeader className="p-2 pt-0 md:p-4">
+                    <CardTitle>Upgrade to Pro</CardTitle>
+                    <CardDescription>
+                      Unlock all features and get unlimited access to our support
+                      team.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-2 pt-0 md:p-4 md:pt-0">
+                    <Button size="sm" className="w-full">
+                      Upgrade
+                    </Button>
+                  </CardContent>
+                </Card>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex flex-col max-h-screen overflow-hidden">
@@ -390,5 +435,6 @@ export default function DashboardPage() {
         </main>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
