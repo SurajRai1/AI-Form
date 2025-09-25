@@ -20,6 +20,7 @@ import {
   X,
   Share2,
   AlertTriangle,
+  RefreshCcw, // New icon for New Chat
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserForms, saveForm, deleteForm as dbDeleteForm, updateForm as dbUpdateForm } from '@/lib/database';
@@ -39,12 +40,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { FormChatCard } from './form-chat-card';
+import FormPreview from './form-preview'; // Import FormPreview for the modal
+
+type FormOptionsContent = {
+    forms: GeneratedForm[];
+    selectedFormId: string | null;
+    savedFormIds: string[];
+};
 
 type ChatMessage = {
   id: number;
   type: 'assistant' | 'user';
   content: React.ReactNode;
+  formOptions?: FormOptionsContent;
   timestamp: Date;
 };
 
@@ -55,6 +66,16 @@ type FormItem = GeneratedForm & {
     status: 'active' | 'draft';
     published: boolean;
 };
+
+const initialMessages: ChatMessage[] = [
+    {
+      id: 1,
+      type: 'assistant',
+      content:
+        "Hello! I'm your AI form builder assistant. Describe the form you need, and I'll create a couple of options for you. For example, try 'Create a contact form'.",
+      timestamp: new Date(),
+    },
+];
 
 // Local date formatting helper
 const formatDate = (dateString: string) =>
@@ -77,9 +98,24 @@ interface ChatInterfaceProps {
     setInputMessage: React.Dispatch<React.SetStateAction<string>>;
     handleSendMessage: () => void;
     handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
+    handleSelectFormOption: (messageId: number, formId: string) => void;
+    handlePreviewForm: (form: GeneratedForm) => void;
+    handleSaveForm: (messageId: number, form: GeneratedForm) => Promise<void>;
+    startNewChat: () => void;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatMessages, isTyping, inputMessage, setInputMessage, handleSendMessage, handleKeyPress }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({
+    chatMessages,
+    isTyping,
+    inputMessage,
+    setInputMessage,
+    handleSendMessage,
+    handleKeyPress,
+    handleSelectFormOption,
+    handlePreviewForm,
+    handleSaveForm,
+    startNewChat
+}) => {
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     const scrollToBottom = () => {
@@ -88,7 +124,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatMessages, isTyping, i
 
     useEffect(() => {
         scrollToBottom();
-    }, [chatMessages]);
+    }, [chatMessages, isTyping]);
 
     return (
         <div className="flex flex-col h-full">
@@ -101,19 +137,42 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatMessages, isTyping, i
                         }`}
                     >
                         <div
-                        className={`max-w-3xl p-4 rounded-2xl ${
+                        className={`max-w-3xl rounded-2xl ${
                             message.type === 'user'
-                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow'
-                            : 'bg-white/80 dark:bg-slate-900/80 text-foreground border border-border/60 backdrop-blur'
+                            ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow p-4'
+                            : 'bg-transparent text-foreground w-full'
                         }`}
                         >
-                        <div className="text-sm leading-relaxed">{message.content}</div>
-                        <p className="text-xs opacity-70 mt-2 text-right">
-                            {message.timestamp.toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            })}
-                        </p>
+                        {message.formOptions ? (
+                             <div className="space-y-4">
+                                <p className="text-sm p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-border/60 backdrop-blur">{message.content}</p>
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    {message.formOptions.forms.map(form => (
+                                        <FormChatCard
+                                            key={form.id}
+                                            form={form}
+                                            onSelect={() => handleSelectFormOption(message.id, form.id)}
+                                            onPreview={handlePreviewForm}
+                                            onSave={() => handleSaveForm(message.id, form)}
+                                            isSelected={message.formOptions?.selectedFormId === form.id}
+                                            isSaved={message.formOptions.savedFormIds.includes(form.id)}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className={`p-4 rounded-2xl ${message.type === 'assistant' ? 'bg-white/80 dark:bg-slate-900/80 border border-border/60 backdrop-blur' : ''}`}>
+                                    <div className="text-sm leading-relaxed">{message.content}</div>
+                                    <p className="text-xs opacity-70 mt-2 text-right">
+                                        {message.timestamp.toLocaleTimeString([], {
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        })}
+                                    </p>
+                                </div>
+                            </>
+                        )}
                         </div>
                     </div>
                 ))}
@@ -139,12 +198,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatMessages, isTyping, i
 
             <div className="p-6 border-t bg-background/80 backdrop-blur shrink-0">
                 <div className="flex space-x-4">
+                <Button variant="outline" onClick={startNewChat}>
+                    <RefreshCcw size={16} className="mr-2"/>
+                    New Chat
+                </Button>
                 <div className="flex-1 relative">
                     <textarea
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyDown={handleKeyPress}
-                    placeholder="Describe the form you want to create..."
+                    placeholder="Describe the form you want to create or improve..."
                     className="w-full p-4 pr-12 border rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent bg-background"
                     rows={1}
                     />
@@ -158,13 +221,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ chatMessages, isTyping, i
                 </div>
                 </div>
                 <div className="mt-3 text-xs text-muted-foreground text-center">
-                Try: "Create a registration form" or "Build a customer survey with
-                rating scale"
+                Try: "Create a registration form" or "Add a field for phone number to the selected form"
                 </div>
             </div>
         </div>
     );
 };
+
 
 // FORMS LIBRARY COMPONENT
 interface FormsLibraryProps {
@@ -178,11 +241,11 @@ interface FormsLibraryProps {
 }
 
 const FormsLibrary: React.FC<FormsLibraryProps> = ({ forms, isLoading, onDelete, onUpdateStatus, onPreview, onEdit, onShare }) => {
-    
+
     if (isLoading) {
         return <div className="p-6 text-center text-muted-foreground">Loading your forms...</div>
     }
-    
+
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-6">
@@ -267,6 +330,7 @@ const FormsLibrary: React.FC<FormsLibraryProps> = ({ forms, isLoading, onDelete,
     );
 };
 
+
 const Analytics = () => <div className="p-6"><h2 className="text-2xl font-bold">Analytics</h2><p>Analytics coming soon.</p></div>;
 const Settings = () => <div className="p-6"><h2 className="text-2xl font-bold">Settings</h2><p>Settings coming soon.</p></div>;
 
@@ -278,17 +342,11 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
   const [loadingForms, setLoadingForms] = useState(true);
   const [formToDelete, setFormToDelete] = useState<FormItem | null>(null);
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    {
-      id: 1,
-      type: 'assistant',
-      content:
-        "Hello! I'm your AI form builder assistant. I can help you create custom forms by describing what you need. Try saying something like 'Create a contact form' or 'Build a survey for customer feedback'.",
-      timestamp: new Date(),
-    },
-  ]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialMessages);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  
+  const [formToPreview, setFormToPreview] = useState<GeneratedForm | null>(null);
 
   const fetchForms = useCallback(async () => {
     if (!user) return;
@@ -296,7 +354,7 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
     try {
         const userFormsData = await getUserForms(user.id);
         const formattedForms = userFormsData
-            .filter(form => form.content) // Filter out forms without content
+            .filter(form => form.content)
             .map((form: any) => ({
             ...form.content,
             id: form.id,
@@ -333,58 +391,113 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
     const currentInput = inputMessage;
     setInputMessage('');
     setIsTyping(true);
-
-    const generatingMessage: ChatMessage = {
-        id: Date.now() + 1,
-        type: 'assistant',
-        content: "Great! I'm generating a couple of form options for you. This might take a moment...",
-        timestamp: new Date(),
-    };
-    setChatMessages((prev) => [...prev, generatingMessage]);
-
+    
+    // Check if there is a selected form in the last message
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    const selectedFormId = lastMessage?.formOptions?.selectedFormId;
+    const selectedForm = selectedFormId ? lastMessage.formOptions?.forms.find(f => f.id === selectedFormId) : null;
+    
     try {
-        const generatedForms = await AIService.generateForms(currentInput);
-        
-        for (const form of generatedForms) {
-            await saveForm(user.id, form);
+        if (selectedForm) {
+            // --- REFINE EXISTING FORM ---
+            const refinedForm = await AIService.refineForm(selectedForm, currentInput);
+            
+            // Update the form options in the last message with the new version
+            setChatMessages(prev => prev.map(msg => {
+                if (msg.id === lastMessage.id && msg.formOptions) {
+                    return {
+                        ...msg,
+                        formOptions: {
+                            ...msg.formOptions,
+                            forms: msg.formOptions.forms.map(f => f.id === selectedFormId ? refinedForm : f),
+                        }
+                    };
+                }
+                return msg;
+            }));
+
+            toast.success("I've updated the selected form for you!");
+
+        } else {
+            // --- GENERATE NEW FORMS ---
+            const generatedForms = await AIService.generateForms(currentInput);
+
+            const formOptionsMessage: ChatMessage = {
+                id: Date.now() + 1,
+                type: 'assistant',
+                content: "Here are two options I've created. Select one to refine it further, or save the one you like.",
+                formOptions: {
+                    forms: generatedForms,
+                    selectedFormId: null,
+                    savedFormIds: [],
+                },
+                timestamp: new Date(),
+            };
+            setChatMessages((prev) => [...prev, formOptionsMessage]);
         }
-
-        const generatedMessage: ChatMessage = {
-          id: Date.now() + 2,
-          type: 'assistant',
-          content: (
-            <div className="space-y-3">
-              <p>I've created two new form drafts for you!</p>
-              <Button
-                onClick={() => {
-                  fetchForms();
-                  setActiveTab('forms');
-                }}
-                size="sm"
-                variant="outline"
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                View Generated Forms
-              </Button>
-            </div>
-          ),
-          timestamp: new Date(),
-        };
-        setChatMessages((prev) => [...prev, generatedMessage]);
-        toast.success("New forms have been generated!");
-
     } catch (error) {
-        console.error("Failed to generate and save forms:", error);
+        console.error("AI service error:", error);
         const errorMessage: ChatMessage = {
-            id: Date.now() + 2,
+            id: Date.now() + 1,
             type: 'assistant',
-            content: "I'm sorry, I encountered an error while generating your forms. Please try again.",
+            content: "I'm sorry, I encountered an error. Please try again.",
             timestamp: new Date(),
         };
         setChatMessages((prev) => [...prev, errorMessage]);
-        toast.error("Form generation failed.");
+        toast.error("An error occurred with the AI service.");
     } finally {
         setIsTyping(false);
+    }
+  };
+
+  const handleSelectFormOption = (messageId: number, formId: string) => {
+    setChatMessages(prev => {
+        const newMessages = [...prev];
+        const msgIndex = newMessages.findIndex(m => m.id === messageId);
+        if (msgIndex !== -1 && newMessages[msgIndex].formOptions) {
+            newMessages[msgIndex] = {
+                ...newMessages[msgIndex],
+                formOptions: {
+                    ...newMessages[msgIndex].formOptions!,
+                    selectedFormId: formId,
+                }
+            };
+        }
+        return newMessages;
+    });
+
+    const selectedFormTitle = chatMessages.find(m => m.id === messageId)?.formOptions?.forms.find(f => f.id === formId)?.title;
+    if (selectedFormTitle) {
+      toast.info(`Selected "${selectedFormTitle}". You can now ask me to make changes.`);
+    }
+  };
+  
+  const handleSaveForm = async (messageId: number, form: GeneratedForm) => {
+    if (!user) {
+        toast.error("You need to be signed in to save a form.");
+        return;
+    }
+    try {
+        await saveForm(user.id, form);
+        toast.success(`Form "${form.title}" saved successfully!`);
+        fetchForms();
+
+        setChatMessages(prev => prev.map(msg => {
+            if (msg.id === messageId && msg.formOptions) {
+                return {
+                    ...msg,
+                    formOptions: {
+                        ...msg.formOptions,
+                        savedFormIds: [...msg.formOptions.savedFormIds, form.id]
+                    }
+                };
+            }
+            return msg;
+        }));
+
+    } catch (error) {
+        console.error("Error saving form:", error);
+        toast.error("Failed to save the form.");
     }
   };
   
@@ -399,13 +512,13 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
     if (!formToDelete) return;
     try {
         await dbDeleteForm(formToDelete.id);
-        fetchForms(); // Refresh the list
+        fetchForms();
         toast.success(`Form "${formToDelete.title}" deleted successfully!`);
     } catch (error) {
         console.error("Error deleting form:", error);
         toast.error("Failed to delete form.");
     } finally {
-        setFormToDelete(null); // Close the dialog
+        setFormToDelete(null);
     }
   };
   
@@ -434,12 +547,18 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
   };
 
   const handlePreview = (form: GeneratedForm) => {
-      router.push(`/dashboard?view=preview&formId=${form.id}`);
+      setFormToPreview(form);
   };
   
   const handleEdit = (form: GeneratedForm) => {
       router.push(`/dashboard?view=builder&formId=${form.id}`);
   };
+
+  const startNewChat = () => {
+    setChatMessages(initialMessages);
+    setInputMessage('');
+    toast.info("Started a new chat session.");
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -450,6 +569,10 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
         setInputMessage={setInputMessage}
         handleSendMessage={handleSendMessage}
         handleKeyPress={handleKeyPress}
+        handleSelectFormOption={handleSelectFormOption}
+        handlePreviewForm={handlePreview}
+        handleSaveForm={handleSaveForm}
+        startNewChat={startNewChat}
       />}
       {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} isLoading={loadingForms} onDelete={setFormToDelete} onUpdateStatus={handleUpdateStatus} onPreview={handlePreview} onEdit={handleEdit} onShare={handleShare}/></div>}
       {activeTab === 'analytics' && <Analytics />}
@@ -476,6 +599,17 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!formToPreview} onOpenChange={(isOpen) => !isOpen && setFormToPreview(null)}>
+        <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Form Preview</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-y-auto -mx-6 px-6">
+                {formToPreview && <FormPreview form={formToPreview} readOnly={true} />}
+            </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

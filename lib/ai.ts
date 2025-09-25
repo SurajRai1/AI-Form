@@ -80,14 +80,22 @@ Return the response as a valid JSON array of 2 form objects.`
         ],
         temperature: 0.7,
         max_tokens: 3000,
+        response_format: { type: "json_object" },
       })
 
       const response = completion.choices[0]?.message?.content
       if (!response) {
         throw new Error('No response from AI')
       }
+      
+      // The API now returns a JSON object with a key, let's assume 'forms'
+      const parsedResponse = JSON.parse(response);
+      const forms = parsedResponse.forms || parsedResponse; // Handle both cases
+      
+      if (!Array.isArray(forms)) {
+          throw new Error("AI did not return a valid array of forms.");
+      }
 
-      const forms = JSON.parse(response)
       return forms.map((form: any) => ({
         ...form,
         id: crypto.randomUUID(),
@@ -103,6 +111,67 @@ Return the response as a valid JSON array of 2 form objects.`
       return this.generateSampleForms(prompt, language)
     }
   }
+
+  // --- NEW METHOD FOR REFINING A FORM ---
+  static async refineForm(existingForm: GeneratedForm, prompt: string): Promise<GeneratedForm> {
+    if (!openai) {
+      // Fallback: Return a slightly modified form as a sample
+      const refinedForm = JSON.parse(JSON.stringify(existingForm)); // Deep copy
+      refinedForm.fields.push({
+        id: crypto.randomUUID(),
+        type: 'text' as const,
+        label: `New field based on: "${prompt}"`,
+        placeholder: 'This is a sample refined field',
+        required: false,
+      });
+      return refinedForm;
+    }
+
+    try {
+      const systemPrompt = `You are an expert form editor. The user will provide an existing form as a JSON object and a prompt with instructions to modify it. Your task is to apply the requested changes and return the single, updated form as a valid JSON object.
+
+Requirements:
+- Only return ONE updated form object. Do not return an array.
+- The returned JSON object must be a complete and valid form structure.
+- Do not change the 'id' of the form or the 'id' of existing fields.
+- When adding new fields, generate a new unique id for them.
+- Interpret the user's request and modify the form accordingly (e.g., add, remove, or change fields, update labels, change validation).
+- Ensure all text content remains in the form's original language: ${existingForm.language}.`;
+
+      const userPrompt = `Here is the current form:
+${JSON.stringify(existingForm, null, 2)}
+
+Please apply this change: "${prompt}"`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.5,
+        max_tokens: 3000,
+        response_format: { type: "json_object" },
+      });
+
+      const response = completion.choices[0]?.message?.content;
+      if (!response) {
+        throw new Error('No response from AI during refinement');
+      }
+
+      const refinedForm = JSON.parse(response);
+      
+      // We need to ensure the top-level ID from the original form is preserved
+      refinedForm.id = existingForm.id;
+
+      return refinedForm;
+
+    } catch (error) {
+      console.error('Error refining form:', error);
+      throw new Error('Failed to refine form with AI.');
+    }
+  }
+
 
   // --- Other methods remain unchanged ---
 
@@ -175,7 +244,7 @@ Provide insights that are actionable and easy to understand for non-technical us
 ${JSON.stringify(formData, null, 2)}`
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-40-mini',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
