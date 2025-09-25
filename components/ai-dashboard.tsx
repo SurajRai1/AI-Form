@@ -22,10 +22,10 @@ import {
   Inbox,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import {
-  getUserForms,
-  saveForm,
-  deleteForm as dbDeleteForm,
+import { 
+  getUserForms, 
+  saveForm, 
+  deleteForm as dbDeleteForm, 
   updateForm as dbUpdateForm,
   saveChatMessage,
   getChatHistory,
@@ -345,6 +345,7 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, activeConversation
         type: msg.role as 'user' | 'assistant',
         content: msg.content,
         timestamp: new Date(msg.created_at),
+        formOptions: msg.metadata || undefined,
       }));
       setChatMessages(formattedHistory);
     } else {
@@ -389,38 +390,36 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, activeConversation
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || !user || !activeConversationId) return;
-
-    // Check if this is the first message of a new chat
+  
     const isNewChat = conversations.find(c => c.id === activeConversationId)?.title === 'New Chat';
-
+  
+    const userMessageContent = inputMessage;
     const userMessage: ChatMessage = {
       id: Date.now(),
       type: 'user',
-      content: inputMessage,
+      content: userMessageContent,
       timestamp: new Date(),
     };
     
     setChatMessages((prev) => [...prev, userMessage]);
-    await saveChatMessage(activeConversationId, user.id, { role: 'user', content: inputMessage });
-
-    const currentInput = inputMessage;
+    await saveChatMessage(activeConversationId, user.id, { role: 'user', content: userMessageContent });
     setInputMessage('');
     setIsTyping(true);
-
-    // If it's a new chat, generate and update the title
-    if (isNewChat) {
-      const newTitle = await AIService.generateChatTitle(currentInput);
-      await updateConversationTitle(activeConversationId, newTitle);
-      refreshConversations(); // Refresh the sidebar list
-    }
-    
+  
+    // Use a Promise to ensure title generation completes before continuing
+    const titleUpdatePromise = isNewChat 
+      ? AIService.generateChatTitle(userMessageContent).then(newTitle => 
+          updateConversationTitle(activeConversationId, newTitle)
+        )
+      : Promise.resolve();
+  
     const lastMessage = chatMessages[chatMessages.length - 1];
     const selectedFormId = lastMessage?.formOptions?.selectedFormId;
     const selectedForm = selectedFormId ? lastMessage.formOptions?.forms.find(f => f.id === selectedFormId) : null;
     
     try {
         if (selectedForm) {
-            const refinedForm = await AIService.refineForm(selectedForm, currentInput);
+            const refinedForm = await AIService.refineForm(selectedForm, userMessageContent);
             setChatMessages(prev => prev.map(msg => {
                 if (msg.id === lastMessage.id && msg.formOptions) {
                     return {
@@ -435,22 +434,28 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, activeConversation
             }));
             toast.success("I've updated the selected form for you!");
         } else {
-            const generatedForms = await AIService.generateForms(currentInput);
+            const generatedForms = await AIService.generateForms(userMessageContent);
             const assistantResponse = "Here are two options I've created. Select one to refine it further, or save the one you like.";
+
+            const formOptions: FormOptionsContent = {
+                forms: generatedForms,
+                selectedFormId: null,
+                savedFormIds: [],
+            };
 
             const formOptionsMessage: ChatMessage = {
                 id: Date.now() + 1,
                 type: 'assistant',
                 content: assistantResponse,
-                formOptions: {
-                    forms: generatedForms,
-                    selectedFormId: null,
-                    savedFormIds: [],
-                },
+                formOptions: formOptions,
                 timestamp: new Date(),
             };
             setChatMessages((prev) => [...prev, formOptionsMessage]);
-            await saveChatMessage(activeConversationId, user.id, { role: 'assistant', content: assistantResponse });
+            await saveChatMessage(activeConversationId, user.id, { 
+              role: 'assistant', 
+              content: assistantResponse,
+              metadata: formOptions
+            });
         }
     } catch (error) {
         console.error("AI service error:", error);
@@ -466,6 +471,11 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, activeConversation
         toast.error("An error occurred with the AI service.");
     } finally {
         setIsTyping(false);
+        // Wait for the title update to complete, then refresh the list
+        await titleUpdatePromise;
+        if (isNewChat) {
+          refreshConversations();
+        }
     }
   };
 

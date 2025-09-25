@@ -42,7 +42,7 @@ export const updateConversationTitle = async (conversationId: string, title: str
 export const saveChatMessage = async (
   conversationId: string,
   userId: string,
-  message: { role: 'user' | 'assistant'; content: string }
+  message: { role: 'user' | 'assistant'; content: string, metadata?: object }
 ) => {
   const { data, error } = await supabase
     .from('chat_messages')
@@ -50,7 +50,8 @@ export const saveChatMessage = async (
       conversation_id: conversationId,
       user_id: userId,
       role: message.role,
-      content: message.content
+      content: message.content,
+      metadata: message.metadata
     }]);
 
   if (error) throw new Error(error.message);
@@ -60,7 +61,7 @@ export const saveChatMessage = async (
 export const getChatHistory = async (conversationId: string) => {
   const { data, error } = await supabase
     .from('chat_messages')
-    .select('role, content, created_at')
+    .select('role, content, created_at, metadata') // Fetch metadata
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true });
 
