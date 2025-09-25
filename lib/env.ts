@@ -1,3 +1,4 @@
+// lib/env.ts
 const requiredEnvs = {
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -6,7 +7,8 @@ const requiredEnvs = {
 } as const
 
 const optionalEnvs = {
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  // Changed OPENAI_API_KEY to GEMINI_API_KEY
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY, 
 } as const
 
 // Validate required environment variables
