@@ -17,7 +17,7 @@ export interface FormField {
   label: string;
   placeholder?: string;
   required: boolean;
-  options?: string[];
+  options?: string[] | { label: string; value: string }[];
   validation?: {
     min?: number;
     max?: number;
@@ -120,6 +120,7 @@ Requirements:
 - Use appropriate field types: text, email, number, textarea, select, radio, checkbox, date, file, password, slider, switch, rating.
 - For 'rating' fields, use a 'max' validation between 3 and 10.
 - For 'slider' fields, define 'min', 'max', and 'step' validation properties.
+- For 'select', 'radio', and 'checkbox', options can be an array of strings OR an array of objects with "label" and "value" keys.
 - Include proper validation rules where appropriate (e.g., min/max length for text).
 - Make fields required when necessary.
 - Use clear, concise labels and placeholders.
@@ -148,6 +149,24 @@ Return the response as a valid JSON object with a single key "forms" containing 
             return this.generateSampleForms(prompt, language)
         }
     }
+    
+    static async generateChatTitle(firstMessage: string): Promise<string> {
+        if (!gemini) {
+            return "New Form Idea"; // Fallback title
+        }
+
+        try {
+            const systemPrompt = `You are an expert at summarizing conversations. Given the user's first message in a form-building chat, create a short, concise title for the conversation (max 5 words). Do not use quotes.`;
+            const userPrompt = `Generate a title for a conversation that starts with: "${firstMessage}"`;
+
+            const title = await this.getTextContent(systemPrompt, userPrompt);
+            return title.replace(/["']/g, ""); // Remove any quotes from the AI response
+        } catch (error) {
+            console.error("Error generating chat title:", error);
+            return "New Form Idea"; // Fallback on error
+        }
+    }
+
 
     // --- Method for REFINING A FORM ---
     static async refineForm(existingForm: GeneratedForm, prompt: string): Promise<GeneratedForm> {

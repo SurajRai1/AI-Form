@@ -1,6 +1,8 @@
+// app/dashboard/page.tsx
+
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,10 +14,12 @@ import {
   Package2,
   Search,
   FileText,
+  MessageSquare,
   Send,
   Settings as SettingsIcon,
   BarChart3,
   ArrowLeft,
+  Plus
 } from 'lucide-react';
 import {
   Card,
@@ -45,9 +49,9 @@ import AIDashboard from '@/components/ai-dashboard';
 import FormBuilder from '@/components/form-builder';
 import FormPreview from '@/components/form-preview';
 import SubmissionsView from '@/components/submissions-view';
-import AnalyticsDashboard from '@/components/analytics-dashboard'; // Import the new component
+import AnalyticsDashboard from '@/components/analytics-dashboard';
 import { GeneratedForm } from '@/lib/ai';
-import { getFormById, getFormSubmissions } from '@/lib/database';
+import { getFormById, getFormSubmissions, getUserConversations, createConversation } from '@/lib/database';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -57,19 +61,36 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const view = searchParams.get('view');
   const formId = searchParams.get('formId');
-  const tab = searchParams.get('tab') || 'forms'; // Default to forms tab
+  const tab = searchParams.get('tab') || 'forms';
+  const conversationId = searchParams.get('conversationId');
+  const { user } = useAuth();
+
 
   const [activeTab, setActiveTab] = useState(tab);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(conversationId);
+  const [conversations, setConversations] = useState<any[]>([]);
+  
   const [formToLoad, setFormToLoad] = React.useState<GeneratedForm | null>(null);
   const [formSubmissions, setFormSubmissions] = React.useState<any[]>([]);
   const [isLoadingForm, setIsLoadingForm] = React.useState(false);
+  
+  const fetchConversations = useCallback(async () => {
+    if (!user) return;
+    const convos = await getUserConversations(user.id);
+    setConversations(convos);
+  }, [user]);
 
-  // Update activeTab when URL changes
-  React.useEffect(() => {
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  // Update state when URL changes
+  useEffect(() => {
     setActiveTab(tab);
-  }, [tab]);
+    setActiveConversationId(conversationId);
+  }, [tab, conversationId]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if ((view === 'builder' || view === 'preview' || view === 'submissions' || view === 'analytics') && formId) {
       setIsLoadingForm(true);
       const fetchFormData = async () => {
@@ -136,12 +157,37 @@ function DashboardContent() {
     );
   }
   
-  return <AIDashboard activeTab={activeTab as any} setActiveTab={(newTab) => router.push(`/dashboard?tab=${newTab}`)} />;
+  return <AIDashboard 
+            activeTab={activeTab as any} 
+            activeConversationId={activeConversationId}
+            conversations={conversations}
+            refreshConversations={fetchConversations}
+         />;
 }
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
-  
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [conversations, setConversations] = useState<any[]>([]);
+
+  const fetchConversations = useCallback(async () => {
+    if (!user) return;
+    const convos = await getUserConversations(user.id);
+    setConversations(convos);
+  }, [user]);
+
+  useEffect(() => {
+    fetchConversations();
+  }, [fetchConversations]);
+
+  const handleNewChat = async () => {
+    if (!user) return;
+    const newConvo = await createConversation(user.id, 'New Chat');
+    await fetchConversations(); // refetch to update list
+    router.push(`/dashboard?tab=chat&conversationId=${newConvo.id}`);
+  };
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/40">
@@ -168,19 +214,17 @@ export default function DashboardPage() {
               <span className="sr-only">Toggle notifications</span>
             </Button>
           </div>
+          <div className="p-4">
+            <Button className="w-full" onClick={handleNewChat}>
+              <Plus size={16} className="mr-2" />
+              New Chat
+            </Button>
+          </div>
           <div className="flex-1 overflow-y-auto">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              {/* These links now navigate via URL, which is more robust */}
-              <Link
-                href="/dashboard?tab=chat"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-              >
-                <Send className="h-4 w-4" />
-                AI Chat
-              </Link>
               <Link
                 href="/dashboard?tab=forms"
-                className="flex items-center gap-3 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
               >
                 <FileText className="h-4 w-4" />
                 My Forms
@@ -199,6 +243,18 @@ export default function DashboardPage() {
                 <SettingsIcon className="h-4 w-4" />
                 Settings
               </Link>
+              <div className="my-4 border-t"></div>
+              {/* Conversation History */}
+              {conversations.map(convo => (
+                <Link
+                  key={convo.id}
+                  href={`/dashboard?tab=chat&conversationId=${convo.id}`}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  {convo.title}
+                </Link>
+              ))}
             </nav>
           </div>
           <div className="mt-auto p-4">

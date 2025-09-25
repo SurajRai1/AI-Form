@@ -1,3 +1,5 @@
+// components/form-preview.tsx
+
 'use client';
 
 import React, { useState } from 'react';
@@ -114,6 +116,11 @@ export default function FormPreview({ form, onSubmit, readOnly = false }: FormPr
             className: `w-full ${error ? 'border-red-500' : ''}`,
             placeholder: field.placeholder,
         };
+        
+        // Helper to handle both string and object options
+        const getOptionValue = (option: any) => typeof option === 'object' && option !== null ? option.value : option;
+        const getOptionLabel = (option: any) => typeof option === 'object' && option !== null ? option.label : option;
+
 
         switch (field.type) {
             case 'text':
@@ -133,8 +140,8 @@ export default function FormPreview({ form, onSubmit, readOnly = false }: FormPr
                         </SelectTrigger>
                         <SelectContent>
                             {field.options?.map((option, index) => (
-                                <SelectItem key={index} value={option}>
-                                    {option}
+                                <SelectItem key={index} value={getOptionValue(option)}>
+                                    {getOptionLabel(option)}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -145,8 +152,8 @@ export default function FormPreview({ form, onSubmit, readOnly = false }: FormPr
                     <RadioGroup value={value} onValueChange={(val) => handleFieldChange(field.id, val)} disabled={readOnly} className="space-y-2">
                         {field.options?.map((option, index) => (
                             <div key={index} className="flex items-center space-x-2">
-                                <RadioGroupItem value={option} id={`${field.id}-${index}`} />
-                                <Label htmlFor={`${field.id}-${index}`} className="font-normal">{option}</Label>
+                                <RadioGroupItem value={getOptionValue(option)} id={`${field.id}-${index}`} />
+                                <Label htmlFor={`${field.id}-${index}`} className="font-normal">{getOptionLabel(option)}</Label>
                             </div>
                         ))}
                     </RadioGroup>
@@ -154,23 +161,26 @@ export default function FormPreview({ form, onSubmit, readOnly = false }: FormPr
             case 'checkbox':
                 return (
                     <div className="space-y-2">
-                        {field.options?.map((option, index) => (
-                            <div key={index} className="flex items-center space-x-2">
-                                <Checkbox
-                                    id={`${field.id}-${index}`}
-                                    checked={Array.isArray(value) && value.includes(option)}
-                                    onCheckedChange={(checked) => {
-                                        const currentValues = Array.isArray(value) ? value : [];
-                                        const newValues = checked
-                                            ? [...currentValues, option]
-                                            : currentValues.filter(v => v !== option);
-                                        handleFieldChange(field.id, newValues);
-                                    }}
-                                    disabled={readOnly}
-                                />
-                                <Label htmlFor={`${field.id}-${index}`} className="font-normal">{option}</Label>
-                            </div>
-                        ))}
+                        {field.options?.map((option, index) => {
+                            const optionValue = getOptionValue(option);
+                            return (
+                                <div key={index} className="flex items-center space-x-2">
+                                    <Checkbox
+                                        id={`${field.id}-${index}`}
+                                        checked={Array.isArray(value) && value.includes(optionValue)}
+                                        onCheckedChange={(checked) => {
+                                            const currentValues = Array.isArray(value) ? value : [];
+                                            const newValues = checked
+                                                ? [...currentValues, optionValue]
+                                                : currentValues.filter(v => v !== optionValue);
+                                            handleFieldChange(field.id, newValues);
+                                        }}
+                                        disabled={readOnly}
+                                    />
+                                    <Label htmlFor={`${field.id}-${index}`} className="font-normal">{getOptionLabel(option)}</Label>
+                                </div>
+                            )
+                        })}
                     </div>
                 );
             case 'switch':

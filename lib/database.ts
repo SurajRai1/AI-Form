@@ -2,7 +2,74 @@
 import { supabase } from '@/lib/supabase';
 import { GeneratedForm } from '@/lib/ai';
 
-// ... (keep all your other existing functions)
+// --- Conversation Functions ---
+
+export const createConversation = async (userId: string, title: string) => {
+  const { data, error } = await supabase
+    .from('conversations')
+    .insert([{ user_id: userId, title }])
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const getUserConversations = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const updateConversationTitle = async (conversationId: string, title: string) => {
+  const { data, error } = await supabase
+    .from('conversations')
+    .update({ title })
+    .eq('id', conversationId);
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+
+// --- Chat Message Functions ---
+
+export const saveChatMessage = async (
+  conversationId: string,
+  userId: string,
+  message: { role: 'user' | 'assistant'; content: string }
+) => {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .insert([{
+      conversation_id: conversationId,
+      user_id: userId,
+      role: message.role,
+      content: message.content
+    }]);
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const getChatHistory = async (conversationId: string) => {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('role, content, created_at')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+
+// --- Existing Form & Submission Functions ---
 
 export const getPublishedFormIds = async () => {
   const { data, error } = await supabase
@@ -14,19 +81,18 @@ export const getPublishedFormIds = async () => {
     console.error('Error fetching published form IDs:', error);
     return [];
   }
-  // Ensure we always return an array, even if Supabase returns null
   return data || [];
 };
 
 export const saveForm = async (userId: string, form: GeneratedForm) => {
   const { data, error } = await supabase
     .from('forms')
-    .insert([{ 
-        user_id: userId, 
-        title: form.title, 
-        description: form.description, 
+    .insert([{
+        user_id: userId,
+        title: form.title,
+        description: form.description,
         content: form,
-        published: false, // Keep this for backward compatibility or simple state
+        published: false,
         published_at: null,
     }])
     .select()
@@ -50,17 +116,16 @@ export const getUserForms = async (userId: string) => {
 export const getFormById = async (formId: string) => {
   const { data, error } = await supabase
     .from('forms')
-    .select('id, content, published_at') // Fetch published_at
+    .select('id, content, published_at')
     .eq('id', formId)
     .single();
 
   if (error) throw new Error(error.message);
 
-  // Combine data correctly
   const form = data.content as GeneratedForm;
   form.id = data.id;
   form.publishedAt = data.published_at ? new Date(data.published_at) : undefined;
-  
+
   return form;
 };
 
@@ -68,9 +133,9 @@ export const getFormById = async (formId: string) => {
 export const updateForm = async (formId: string, form: GeneratedForm) => {
     const { data, error } = await supabase
         .from('forms')
-        .update({ 
-            title: form.title, 
-            description: form.description, 
+        .update({
+            title: form.title,
+            description: form.description,
             content: form,
             published: !!form.publishedAt,
             published_at: form.publishedAt ? form.publishedAt.toISOString() : null,
@@ -138,9 +203,8 @@ export const getAggregatedFormStats = async (userId: string) => {
 
   const totalForms = forms.length;
   const totalSubmissions = submissions.length;
-  
-  // These are simplified for the MVP. Real implementation would be more complex.
-  const overallCompletionRate = totalForms > 0 ? 87.3 : 0; 
+
+  const overallCompletionRate = totalForms > 0 ? 87.3 : 0;
   const averageTimeToComplete = totalSubmissions > 0 ? 45 : 0;
 
   let mostActiveForm = null;
@@ -166,24 +230,4 @@ export const getAggregatedFormStats = async (userId: string) => {
     mostActiveForm,
     leastActiveForm,
   };
-};
-
-export const saveChatMessage = async (userId: string, message: { role: 'user' | 'assistant', content: string }) => {
-  const { data, error } = await supabase
-    .from('chat_messages')
-    .insert([{ user_id: userId, role: message.role, content: message.content }]);
-
-  if (error) throw new Error(error.message);
-  return data;
-};
-
-export const getUserChatHistory = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('chat_messages')
-    .select('role, content, created_at')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return data || [];
 };

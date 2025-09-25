@@ -13,27 +13,23 @@ import {
   Eye,
   Trash2,
   Edit,
-  Users,
-  TrendingUp,
-  Clock,
-  Star,
   MoreHorizontal,
   Check,
   X,
   Share2,
   AlertTriangle,
-  RefreshCcw,
   Copy,
   Inbox,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  getUserForms, 
-  saveForm, 
-  deleteForm as dbDeleteForm, 
+import {
+  getUserForms,
+  saveForm,
+  deleteForm as dbDeleteForm,
   updateForm as dbUpdateForm,
   saveChatMessage,
-  getUserChatHistory
+  getChatHistory,
+  updateConversationTitle
 } from '@/lib/database';
 import { AIService, GeneratedForm } from '@/lib/ai';
 
@@ -99,7 +95,9 @@ const formatDate = (dateString: string) =>
 
 interface AIDashboardProps {
   activeTab: 'chat' | 'forms' | 'analytics' | 'settings';
-  setActiveTab: (tab: 'chat' | 'forms' | 'analytics' | 'settings') => void;
+  activeConversationId: string | null;
+  conversations: any[];
+  refreshConversations: () => void;
 }
 
 const ChatInterface: React.FC<any> = ({
@@ -112,7 +110,6 @@ const ChatInterface: React.FC<any> = ({
     handleSelectFormOption,
     handlePreviewForm,
     handleSaveForm,
-    startNewChat
 }) => {
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -196,10 +193,6 @@ const ChatInterface: React.FC<any> = ({
 
             <div className="p-6 border-t bg-background/80 backdrop-blur shrink-0">
                 <div className="flex space-x-4">
-                <Button variant="outline" onClick={startNewChat}>
-                    <RefreshCcw size={16} className="mr-2"/>
-                    New Chat
-                </Button>
                 <div className="flex-1 relative">
                     <textarea
                     value={inputMessage}
@@ -326,7 +319,7 @@ const FormsLibrary: React.FC<any> = ({ forms, isLoading, onDelete, onUpdateStatu
 const Settings = () => <div className="p-6"><h2 className="text-2xl font-bold">Settings</h2><p>Settings coming soon.</p></div>;
 
 
-const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) => {
+const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, activeConversationId, conversations, refreshConversations }) => {
   const { user } = useAuth();
   const router = useRouter();
   const [forms, setForms] = useState<FormItem[]>([]);
@@ -341,8 +334,11 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
   const [formToPreview, setFormToPreview] = useState<GeneratedForm | null>(null);
 
   const fetchChatHistory = useCallback(async () => {
-    if (!user) return;
-    const history = await getUserChatHistory(user.id);
+    if (!activeConversationId) {
+      setChatMessages(initialMessages);
+      return;
+    };
+    const history = await getChatHistory(activeConversationId);
     if (history.length > 0) {
       const formattedHistory = history.map((msg, index) => ({
         id: index,
@@ -354,7 +350,7 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
     } else {
       setChatMessages(initialMessages);
     }
-  }, [user]);
+  }, [activeConversationId]);
 
   const fetchForms = useCallback(async () => {
     if (!user) return;
@@ -384,12 +380,18 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
   useEffect(() => {
     if (user) {
         fetchForms();
-        fetchChatHistory();
     }
-  }, [user, fetchForms, fetchChatHistory]);
+  }, [user, fetchForms]);
+
+  useEffect(() => {
+    fetchChatHistory();
+  }, [activeConversationId, fetchChatHistory]);
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !user) return;
+    if (!inputMessage.trim() || !user || !activeConversationId) return;
+
+    // Check if this is the first message of a new chat
+    const isNewChat = conversations.find(c => c.id === activeConversationId)?.title === 'New Chat';
 
     const userMessage: ChatMessage = {
       id: Date.now(),
@@ -399,11 +401,18 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
     };
     
     setChatMessages((prev) => [...prev, userMessage]);
-    await saveChatMessage(user.id, { role: 'user', content: inputMessage });
+    await saveChatMessage(activeConversationId, user.id, { role: 'user', content: inputMessage });
 
     const currentInput = inputMessage;
     setInputMessage('');
     setIsTyping(true);
+
+    // If it's a new chat, generate and update the title
+    if (isNewChat) {
+      const newTitle = await AIService.generateChatTitle(currentInput);
+      await updateConversationTitle(activeConversationId, newTitle);
+      refreshConversations(); // Refresh the sidebar list
+    }
     
     const lastMessage = chatMessages[chatMessages.length - 1];
     const selectedFormId = lastMessage?.formOptions?.selectedFormId;
@@ -441,7 +450,7 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
                 timestamp: new Date(),
             };
             setChatMessages((prev) => [...prev, formOptionsMessage]);
-            await saveChatMessage(user.id, { role: 'assistant', content: assistantResponse });
+            await saveChatMessage(activeConversationId, user.id, { role: 'assistant', content: assistantResponse });
         }
     } catch (error) {
         console.error("AI service error:", error);
@@ -453,7 +462,7 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
             timestamp: new Date(),
         };
         setChatMessages((prev) => [...prev, errorMessage]);
-        await saveChatMessage(user.id, { role: 'assistant', content: errorMessageContent });
+        await saveChatMessage(activeConversationId, user.id, { role: 'assistant', content: errorMessageContent });
         toast.error("An error occurred with the AI service.");
     } finally {
         setIsTyping(false);
@@ -569,19 +578,13 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
       router.push(`/dashboard?view=analytics&formId=${form.id}`);
   };
 
-  const startNewChat = () => {
-    setChatMessages(initialMessages);
-    setInputMessage('');
-    toast.info("Started a new chat session.");
-  }
-
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast.success("Link copied to clipboard!");
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       {activeTab === 'chat' && <ChatInterface 
         chatMessages={chatMessages}
         isTyping={isTyping}
@@ -592,7 +595,6 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
         handleSelectFormOption={handleSelectFormOption}
         handlePreviewForm={handlePreview}
         handleSaveForm={handleSaveForm}
-        startNewChat={startNewChat}
       />}
       {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} isLoading={loadingForms} onDelete={setFormToDelete} onUpdateStatus={handleUpdateStatus} onPreview={handlePreview} onEdit={handleEdit} onShare={handleShare} onViewSubmissions={handleViewSubmissions} onViewAnalytics={handleViewAnalytics}/></div>}
       {activeTab === 'analytics' && <GlobalAnalyticsDashboard />}
