@@ -7,8 +7,8 @@ const requiredEnvs = {
 } as const
 
 const optionalEnvs = {
-  // Changed OPENAI_API_KEY to GEMINI_API_KEY
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY, 
+  // Use NEXT_PUBLIC_ to expose the key to the client-side for local development
+  NEXT_PUBLIC_GEMINI_API_KEY: process.env.NEXT_PUBLIC_GEMINI_API_KEY,
 } as const
 
 // Validate required environment variables

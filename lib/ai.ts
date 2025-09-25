@@ -1,11 +1,9 @@
 // lib/ai.ts
-import { GoogleGenAI } from '@google/genai'; // Changed import from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { env } from './env';
 
-// Only create Gemini client if API key is available
-const gemini = env.GEMINI_API_KEY ? new GoogleGenAI({
-    apiKey: env.GEMINI_API_KEY,
-}) : null; // Changed from openai client initialization
+// Use the client-side environment variable to initialize the Gemini client
+const gemini = env.NEXT_PUBLIC_GEMINI_API_KEY ? new GoogleGenerativeAI(env.NEXT_PUBLIC_GEMINI_API_KEY) : null;
 
 export interface FormField {
   id: string;
@@ -49,89 +47,62 @@ export interface FormAnalytics {
 }
 
 export class AIService {
-
-    // Helper function to call Gemini for a structured JSON response
     private static async getJsonContent(
-        systemPrompt: string, 
-        userPrompt: string, 
-        model: string = 'gemini-2.5-flash'
+        systemPrompt: string,
+        userPrompt: string,
+        model: string = 'gemini-1.5-flash-latest' // Updated to a valid and current model
     ): Promise<any> {
         if (!gemini) {
             throw new Error('Gemini API key is not configured.');
         }
 
-        const response = await gemini.models.generateContent({
+        const generativeModel = gemini.getGenerativeModel({
             model: model,
-            contents: [
-                { role: 'user', parts: [{ text: userPrompt }] }
-            ],
-            config: {
-                systemInstruction: systemPrompt,
-                responseMimeType: "application/json", 
-                responseSchema: {
-                    type: "object",
-                    properties: {
-                        forms: {
-                            type: "array",
-                            items: {
-                                type: "object",
-                                properties: {
-                                    id: { type: "string" },
-                                    title: { type: "string" },
-                                    description: { type: "string" },
-                                    fields: { type: "array", items: { type: "object" } },
-                                    theme: { type: "string" },
-                                    language: { type: "string" },
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            systemInstruction: systemPrompt,
+            generationConfig: {
+                responseMimeType: "application/json",
+            },
         });
 
-        const jsonText = response.text.trim();
+        const result = await generativeModel.generateContent(userPrompt);
+        const response = result.response;
+        const jsonText = response.text().trim();
+
         if (!jsonText) {
              throw new Error('No valid JSON response from AI.');
         }
-        
+
         try {
-             // Try to parse the top-level response. It might be the form array, or wrapped in a 'forms' key.
              const parsed = JSON.parse(jsonText);
              return parsed.forms || parsed;
         } catch (e) {
+             console.error("Failed to parse AI response:", jsonText);
              throw new Error("Failed to parse AI response as JSON.");
         }
     }
-    
-    // Helper function for general text response (like analysis/insights)
+
     private static async getTextContent(
-        systemPrompt: string, 
-        userPrompt: string, 
-        model: string = 'gemini-2.5-flash'
+        systemPrompt: string,
+        userPrompt: string,
+        model: string = 'gemini-1.5-flash-latest' // Updated to a valid and current model
     ): Promise<string> {
         if (!gemini) {
             throw new Error('Gemini API key is not configured.');
         }
 
-        const response = await gemini.models.generateContent({
+        const generativeModel = gemini.getGenerativeModel({
             model: model,
-            contents: [
-                { role: 'user', parts: [{ text: userPrompt }] }
-            ],
-            config: {
-                systemInstruction: systemPrompt,
-                temperature: 0.7
-            }
+            systemInstruction: systemPrompt,
         });
 
-        return response.text.trim();
+        const result = await generativeModel.generateContent(userPrompt);
+        const response = result.response;
+        return response.text().trim();
     }
 
 
     static async generateForms(prompt: string, language: string = 'English'): Promise<GeneratedForm[]> {
-        if (!gemini) { // Check for gemini client instead of openai
-            // Fallback: Generate sample forms when AI is not available
+        if (!gemini) {
             return this.generateSampleForms(prompt, language)
         }
 
@@ -139,7 +110,7 @@ export class AIService {
             const systemPrompt = `You are an expert form designer. Generate 2 different form designs based on the user's description. Each form should be well-structured, user-friendly, and optimized for the specified language.
 Requirements:
 - Create 2 distinct form designs.
-- Each form should have 5-10 relevant fields.
+- Each form should have a relevant number of fields based on the prompt.
 - Use appropriate field types: text, email, number, textarea, select, radio, checkbox, date, file, password, slider, switch, rating.
 - For 'rating' fields, use a 'max' validation between 3 and 10.
 - For 'slider' fields, define 'min', 'max', and 'step' validation properties.
@@ -147,12 +118,12 @@ Requirements:
 - Make fields required when necessary.
 - Use clear, concise labels and placeholders.
 - Generate all text content in the specified language: ${language}.
-Return the response as a valid JSON array of 2 form objects.`
+Return the response as a valid JSON object with a single key "forms" containing an array of 2 form objects.`
 
             const userPrompt = `Create 2 different forms for: ${prompt}`
 
             const forms = await this.getJsonContent(systemPrompt, userPrompt);
-            
+
             if (!Array.isArray(forms)) {
                  throw new Error("AI did not return a valid array of forms.");
             }
@@ -168,16 +139,14 @@ Return the response as a valid JSON array of 2 form objects.`
             }))
         } catch (error) {
             console.error('Error generating forms:', error)
-            // Fallback to sample forms if AI fails
             return this.generateSampleForms(prompt, language)
         }
     }
 
     // --- Method for REFINING A FORM ---
     static async refineForm(existingForm: GeneratedForm, prompt: string): Promise<GeneratedForm> {
-        if (!gemini) { // Check for gemini client instead of openai
-            // Fallback logic for when AI is not available
-            const refinedForm = JSON.parse(JSON.stringify(existingForm)); 
+        if (!gemini) {
+            const refinedForm = JSON.parse(JSON.stringify(existingForm));
             refinedForm.fields.push({
                 id: crypto.randomUUID(),
                 type: 'text' as const,
@@ -203,10 +172,8 @@ ${JSON.stringify(existingForm, null, 2)}
 
 Please apply this change: "${prompt}"`;
 
-            // Use the JSON helper which now correctly handles the model call
             const refinedForm = await this.getJsonContent(systemPrompt, userPrompt);
             
-            // We need to ensure the top-level ID from the original form is preserved
             refinedForm.id = existingForm.id;
 
             return refinedForm as GeneratedForm;
@@ -220,8 +187,7 @@ Please apply this change: "${prompt}"`;
 
     // --- Method for TRANSLATING A FORM ---
     static async translateForm(form: GeneratedForm, targetLanguage: string): Promise<GeneratedForm> {
-        if (!gemini) { // Check for gemini client instead of openai
-            // Fallback: Return the same form with updated language
+        if (!gemini) {
             return { ...form, language: targetLanguage }
         }
 
@@ -248,15 +214,13 @@ ${JSON.stringify(form, null, 2)}`
             
         } catch (error) {
             console.error('Error translating form:', error)
-            // Fallback: Return the same form with updated language
             return { ...form, language: targetLanguage }
         }
     }
 
     // --- Method for ANALYZING FORM DATA ---
     static async analyzeFormData(formData: any): Promise<FormAnalytics> {
-        if (!gemini) { // Check for gemini client instead of openai
-            // Fallback: Return sample analytics
+        if (!gemini) {
             return this.generateSampleAnalytics(formData)
         }
 
@@ -275,7 +239,6 @@ ${JSON.stringify(formData, null, 2)}`;
 
             const responseText = await this.getTextContent(systemPrompt, userPrompt);
 
-            // Split response by new lines to get individual insights
             const insights = responseText.split('\n').map(line => line.trim().replace(/^\d+\.\s*/, '')).filter(line => line.length > 0);
 
             return {
@@ -288,14 +251,13 @@ ${JSON.stringify(formData, null, 2)}`;
             }
         } catch (error) {
             console.error('Error analyzing form data:', error)
-            // Fallback to sample analytics
             return this.generateSampleAnalytics(formData)
         }
     }
 
     // --- Method for getting AI Insights (Q&A) ---
     static async getAIInsights(question: string, formData: any): Promise<string> {
-        if (!gemini) { // Check for gemini client instead of openai
+        if (!gemini) {
             return 'AI insights are not available. Please set up your GEMINI_API_KEY to enable this feature.'
         }
 
@@ -313,12 +275,9 @@ Please provide a clear, simple explanation.`;
             return 'Sorry, I encountered an error while analyzing your data.'
         }
     }
-// The fallback methods and utility functions remain unchanged.
-// ...
-// ...
+
     // Fallback methods for when AI is not available
     private static generateSampleForms(prompt: string, language: string): GeneratedForm[] {
-        // ... (omitted for brevity)
         const baseForm = {
             id: crypto.randomUUID(),
             title: 'Sample Feedback Form',
@@ -408,7 +367,6 @@ Please provide a clear, simple explanation.`;
     }
 
     private static generateSampleAnalytics(formData: any): FormAnalytics {
-        // ... (omitted for brevity)
         return {
             totalSubmissions: formData.submissions?.length || 0,
             completionRate: this.calculateCompletionRate(formData),
