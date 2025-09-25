@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Plus, Trash2, GripVertical, Settings, Eye, Save, Globe, Sparkles, ArrowLeft, Star, ToggleLeft, SlidersHorizontal, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,6 +54,41 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuth();
+  
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  // Ghost element for drag-and-drop
+  useEffect(() => {
+    const handleDragOver = (e: DragEvent) => {
+      const ghost = document.getElementById('ghost-drag-item');
+      if (ghost) {
+        ghost.style.left = `${e.clientX + 15}px`;
+        ghost.style.top = `${e.clientY}px`;
+      }
+    };
+
+    const handleDragEnd = () => {
+      const ghost = document.getElementById('ghost-drag-item');
+      if (ghost) {
+        ghost.remove();
+      }
+      setDragging(false);
+    };
+
+    if (dragging) {
+      window.addEventListener('dragover', handleDragOver);
+      window.addEventListener('dragend', handleDragEnd);
+    }
+
+    return () => {
+      window.removeEventListener('dragover', handleDragOver);
+      window.removeEventListener('dragend', handleDragEnd);
+      handleDragEnd();
+    };
+  }, [dragging]);
+
 
   const handleSave = async () => {
     if (!user) {
@@ -113,20 +148,42 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
     }
   };
 
-  const moveField = (fieldId: string, direction: 'up' | 'down') => {
-    setCurrentForm(prev => {
-      const fields = [...prev.fields];
-      const index = fields.findIndex(f => f.id === fieldId);
-      
-      if (direction === 'up' && index > 0) {
-        [fields[index], fields[index - 1]] = [fields[index - 1], fields[index]];
-      } else if (direction === 'down' && index < fields.length - 1) {
-        [fields[index], fields[index + 1]] = [fields[index + 1], fields[index]];
-      }
-      
-      return { ...prev, fields };
-    });
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+    dragItem.current = index;
+    const ghost = e.currentTarget.cloneNode(true) as HTMLElement;
+    ghost.id = 'ghost-drag-item';
+    ghost.style.position = 'absolute';
+    ghost.style.top = `${e.clientY}px`;
+    ghost.style.left = `${e.clientX + 15}px`;
+    ghost.style.pointerEvents = 'none';
+    ghost.style.opacity = '0.8';
+    ghost.style.width = `${e.currentTarget.offsetWidth}px`;
+    document.body.appendChild(ghost);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', ''); // For Firefox compatibility
+    setDragging(true);
   };
+
+  const handleDragEnter = (index: number) => {
+    dragOverItem.current = index;
+  };
+
+  const handleSort = () => {
+    if (dragItem.current === null || dragOverItem.current === null || dragItem.current === dragOverItem.current) {
+      return;
+    }
+    
+    const newFields = [...currentForm.fields];
+    const draggedItemContent = newFields.splice(dragItem.current, 1)[0];
+    newFields.splice(dragOverItem.current, 0, draggedItemContent);
+    
+    dragItem.current = null;
+    dragOverItem.current = null;
+    
+    setCurrentForm(prev => ({ ...prev, fields: newFields }));
+  };
+
 
   const renderFieldEditor = (field: FormField) => {
     return (
@@ -257,22 +314,27 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
     );
   };
 
-  const renderFieldPreview = (field: FormField) => {
+  const renderFieldPreview = (field: FormField, index: number) => {
     const isSelected = selectedField === field.id;
     
     return (
       <div
         key={field.id}
-        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+        draggable
+        onDragStart={(e) => handleDragStart(e, index)}
+        onDragEnter={() => handleDragEnter(index)}
+        onDragEnd={handleSort}
+        onDragOver={(e) => e.preventDefault()}
+        className={`p-4 border-2 rounded-lg transition-all ${
           isSelected
             ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/50'
             : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
-        }`}
+        } ${dragging && dragItem.current === index ? 'opacity-50' : ''}`}
         onClick={() => setSelectedField(field.id)}
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <GripVertical className="h-4 w-4 text-gray-400" />
+            <GripVertical className="h-5 w-5 text-gray-400 cursor-grab" />
             <Badge variant="outline" className="text-xs">
               {fieldTypes.find(t => t.value === field.type)?.icon} {field.type}
             </Badge>
@@ -281,30 +343,6 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
                 Required
               </Badge>
             )}
-          </div>
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                moveField(field.id, 'up');
-              }}
-              disabled={currentForm.fields.indexOf(field) === 0}
-            >
-              ↑
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                moveField(field.id, 'down');
-              }}
-              disabled={currentForm.fields.indexOf(field) === currentForm.fields.length - 1}
-            >
-              ↓
-            </Button>
           </div>
         </div>
 
@@ -488,7 +526,7 @@ export default function FormBuilder({ form, onSaveSuccess }: FormBuilderProps) {
                 </div>
 
                 <div className="space-y-4">
-                  {currentForm.fields.map(renderFieldPreview)}
+                  {currentForm.fields.map((field, index) => renderFieldPreview(field, index))}
                 </div>
 
                 {currentForm.fields.length === 0 && (

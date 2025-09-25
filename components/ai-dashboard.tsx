@@ -23,11 +23,18 @@ import {
   Share2,
   AlertTriangle,
   RefreshCcw,
-  Copy, // Import Copy icon
-  Inbox, // Import Inbox icon for submissions
+  Copy,
+  Inbox,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getUserForms, saveForm, deleteForm as dbDeleteForm, updateForm as dbUpdateForm } from '@/lib/database';
+import { 
+  getUserForms, 
+  saveForm, 
+  deleteForm as dbDeleteForm, 
+  updateForm as dbUpdateForm,
+  saveChatMessage,
+  getUserChatHistory
+} from '@/lib/database';
 import { AIService, GeneratedForm } from '@/lib/ai';
 
 import { Button } from '@/components/ui/button';
@@ -44,12 +51,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { FormChatCard } from './form-chat-card';
 import FormPreview from './form-preview';
-import { Input } from '@/components/ui/input'; // Import Input component
-import GlobalAnalyticsDashboard from './global-analytics-dashboard'; // Import the new component
+import { Input } from '@/components/ui/input';
+import GlobalAnalyticsDashboard from './global-analytics-dashboard';
 
 type FormOptionsContent = {
     forms: GeneratedForm[];
@@ -95,8 +102,6 @@ interface AIDashboardProps {
   setActiveTab: (tab: 'chat' | 'forms' | 'analytics' | 'settings') => void;
 }
 
-// CHAT INTERFACE COMPONENT
-// ... (This component remains unchanged)
 const ChatInterface: React.FC<any> = ({
     chatMessages,
     isTyping,
@@ -145,7 +150,7 @@ const ChatInterface: React.FC<any> = ({
                                             key={form.id}
                                             form={form}
                                             onSelect={() => handleSelectFormOption(message.id, form.id)}
-                                            onPreview={handlePreviewForm}
+                                            onPreview={() => handlePreviewForm(form)}
                                             onSave={() => handleSaveForm(message.id, form)}
                                             isSelected={message.formOptions?.selectedFormId === form.id}
                                             isSaved={message.formOptions.savedFormIds.includes(form.id)}
@@ -222,7 +227,6 @@ const ChatInterface: React.FC<any> = ({
 };
 
 
-// FORMS LIBRARY COMPONENT
 const FormsLibrary: React.FC<any> = ({ forms, isLoading, onDelete, onUpdateStatus, onPreview, onEdit, onShare, onViewSubmissions, onViewAnalytics }) => {
 
     if (isLoading) {
@@ -328,13 +332,29 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
   const [forms, setForms] = useState<FormItem[]>([]);
   const [loadingForms, setLoadingForms] = useState(true);
   const [formToDelete, setFormToDelete] = useState<FormItem | null>(null);
-  const [formToShare, setFormToShare] = useState<FormItem | null>(null); // New state for share dialog
+  const [formToShare, setFormToShare] = useState<FormItem | null>(null);
 
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(initialMessages);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   
   const [formToPreview, setFormToPreview] = useState<GeneratedForm | null>(null);
+
+  const fetchChatHistory = useCallback(async () => {
+    if (!user) return;
+    const history = await getUserChatHistory(user.id);
+    if (history.length > 0) {
+      const formattedHistory = history.map((msg, index) => ({
+        id: index,
+        type: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        timestamp: new Date(msg.created_at),
+      }));
+      setChatMessages(formattedHistory);
+    } else {
+      setChatMessages(initialMessages);
+    }
+  }, [user]);
 
   const fetchForms = useCallback(async () => {
     if (!user) return;
@@ -364,11 +384,11 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
   useEffect(() => {
     if (user) {
         fetchForms();
+        fetchChatHistory();
     }
-  }, [user, fetchForms]);
+  }, [user, fetchForms, fetchChatHistory]);
 
-  // ... (handleSendMessage, handleSelectFormOption, handleSaveForm, handleKeyPress, confirmDeleteForm remain unchanged)
-    const handleSendMessage = async () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim() || !user) return;
 
     const userMessage: ChatMessage = {
@@ -377,23 +397,21 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
       content: inputMessage,
       timestamp: new Date(),
     };
-
+    
     setChatMessages((prev) => [...prev, userMessage]);
+    await saveChatMessage(user.id, { role: 'user', content: inputMessage });
+
     const currentInput = inputMessage;
     setInputMessage('');
     setIsTyping(true);
     
-    // Check if there is a selected form in the last message
     const lastMessage = chatMessages[chatMessages.length - 1];
     const selectedFormId = lastMessage?.formOptions?.selectedFormId;
     const selectedForm = selectedFormId ? lastMessage.formOptions?.forms.find(f => f.id === selectedFormId) : null;
     
     try {
         if (selectedForm) {
-            // --- REFINE EXISTING FORM ---
             const refinedForm = await AIService.refineForm(selectedForm, currentInput);
-            
-            // Update the form options in the last message with the new version
             setChatMessages(prev => prev.map(msg => {
                 if (msg.id === lastMessage.id && msg.formOptions) {
                     return {
@@ -406,17 +424,15 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
                 }
                 return msg;
             }));
-
             toast.success("I've updated the selected form for you!");
-
         } else {
-            // --- GENERATE NEW FORMS ---
             const generatedForms = await AIService.generateForms(currentInput);
+            const assistantResponse = "Here are two options I've created. Select one to refine it further, or save the one you like.";
 
             const formOptionsMessage: ChatMessage = {
                 id: Date.now() + 1,
                 type: 'assistant',
-                content: "Here are two options I've created. Select one to refine it further, or save the one you like.",
+                content: assistantResponse,
                 formOptions: {
                     forms: generatedForms,
                     selectedFormId: null,
@@ -425,16 +441,19 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
                 timestamp: new Date(),
             };
             setChatMessages((prev) => [...prev, formOptionsMessage]);
+            await saveChatMessage(user.id, { role: 'assistant', content: assistantResponse });
         }
     } catch (error) {
         console.error("AI service error:", error);
+        const errorMessageContent = "I'm sorry, I encountered an error. Please try again.";
         const errorMessage: ChatMessage = {
             id: Date.now() + 1,
             type: 'assistant',
-            content: "I'm sorry, I encountered an error. Please try again.",
+            content: errorMessageContent,
             timestamp: new Date(),
         };
         setChatMessages((prev) => [...prev, errorMessage]);
+        await saveChatMessage(user.id, { role: 'assistant', content: errorMessageContent });
         toast.error("An error occurred with the AI service.");
     } finally {
         setIsTyping(false);
@@ -456,7 +475,6 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
         }
         return newMessages;
     });
-
     const selectedFormTitle = chatMessages.find(m => m.id === messageId)?.formOptions?.forms.find(f => f.id === formId)?.title;
     if (selectedFormTitle) {
       toast.info(`Selected "${selectedFormTitle}". You can now ask me to make changes.`);
@@ -532,11 +550,11 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
         toast.error("Only published forms can be shared.");
         return;
     }
-    setFormToShare(form); // Open the share dialog
+    setFormToShare(form);
   };
 
   const handlePreview = (form: GeneratedForm) => {
-      router.push(`/dashboard?view=preview&formId=${form.id}`);
+      setFormToPreview(form);
   };
   
   const handleEdit = (form: GeneratedForm) => {
@@ -613,7 +631,6 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
         </DialogContent>
       </Dialog>
       
-      {/* Share Form Dialog */}
       <Dialog open={!!formToShare} onOpenChange={(isOpen) => !isOpen && setFormToShare(null)}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader>

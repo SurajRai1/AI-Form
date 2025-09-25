@@ -167,3 +167,23 @@ export const getAggregatedFormStats = async (userId: string) => {
     leastActiveForm,
   };
 };
+
+export const saveChatMessage = async (userId: string, message: { role: 'user' | 'assistant', content: string }) => {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .insert([{ user_id: userId, role: message.role, content: message.content }]);
+
+  if (error) throw new Error(error.message);
+  return data;
+};
+
+export const getUserChatHistory = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('role, content, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
