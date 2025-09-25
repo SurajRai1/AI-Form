@@ -5,6 +5,12 @@ import { env } from './env';
 // Use the client-side environment variable to initialize the Gemini client
 const gemini = env.NEXT_PUBLIC_GEMINI_API_KEY ? new GoogleGenerativeAI(env.NEXT_PUBLIC_GEMINI_API_KEY) : null;
 
+if (!gemini) {
+  console.warn(
+    'Gemini API key is not configured. Falling back to sample data. Please set the NEXT_PUBLIC_GEMINI_API_KEY environment variable in your .env.local file.'
+  );
+}
+
 export interface FormField {
   id: string;
   type: 'text' | 'email' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'file' | 'password' | 'slider' | 'switch' | 'rating';
