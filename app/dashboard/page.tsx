@@ -44,8 +44,10 @@ import {
 import AIDashboard from '@/components/ai-dashboard';
 import FormBuilder from '@/components/form-builder';
 import FormPreview from '@/components/form-preview';
+import SubmissionsView from '@/components/submissions-view';
+import AnalyticsDashboard from '@/components/analytics-dashboard'; // Import the new component
 import { GeneratedForm } from '@/lib/ai';
-import { getFormById } from '@/lib/database';
+import { getFormById, getFormSubmissions } from '@/lib/database';
 import { toast } from 'sonner';
 import { ThemeToggle } from '@/components/theme-toggle';
 
@@ -59,6 +61,7 @@ function DashboardContent() {
 
   const [activeTab, setActiveTab] = useState(tab);
   const [formToLoad, setFormToLoad] = React.useState<GeneratedForm | null>(null);
+  const [formSubmissions, setFormSubmissions] = React.useState<any[]>([]);
   const [isLoadingForm, setIsLoadingForm] = React.useState(false);
 
   // Update activeTab when URL changes
@@ -67,26 +70,30 @@ function DashboardContent() {
   }, [tab]);
 
   React.useEffect(() => {
-    if ((view === 'builder' || view === 'preview') && formId) {
+    if ((view === 'builder' || view === 'preview' || view === 'submissions' || view === 'analytics') && formId) {
       setIsLoadingForm(true);
-      const fetchForm = async () => {
+      const fetchFormData = async () => {
         try {
           const form = await getFormById(formId);
           setFormToLoad(form);
+          if (view === 'analytics') {
+            const submissions = await getFormSubmissions(formId);
+            setFormSubmissions(submissions);
+          }
         } catch (error) {
-          toast.error('Failed to load the form.');
+          toast.error('Failed to load the form data.');
           console.error(error);
           router.push('/dashboard');
         } finally {
           setIsLoadingForm(false);
         }
       };
-      fetchForm();
+      fetchFormData();
     }
   }, [view, formId, router]);
   
   const handleBackToDashboard = () => {
-    router.push('/dashboard');
+    router.push('/dashboard?tab=forms');
   };
 
   if (isLoadingForm) {
@@ -110,6 +117,22 @@ function DashboardContent() {
             </Button>
             <FormPreview form={formToLoad} />
         </div>
+    );
+  }
+
+  if (view === 'submissions' && formToLoad) {
+    return <SubmissionsView form={formToLoad} onBack={handleBackToDashboard} />;
+  }
+
+  if (view === 'analytics' && formToLoad) {
+    return (
+      <div className="p-4 sm:p-6 lg:p-8">
+        <Button onClick={handleBackToDashboard} variant="outline" className="mb-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Forms
+        </Button>
+        <AnalyticsDashboard formId={formToLoad.id} formData={{ ...formToLoad, submissions: formSubmissions }} />
+      </div>
     );
   }
   

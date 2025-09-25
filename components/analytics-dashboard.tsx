@@ -28,6 +28,7 @@ export default function AnalyticsDashboard({ formId, formData }: AnalyticsDashbo
   const loadAnalytics = async () => {
     setLoading(true);
     try {
+      // NOTE: This uses sample data. We will connect to real data later.
       const analyticsData = await AIService.analyzeFormData(formData);
       setAnalytics(analyticsData);
     } catch (error) {

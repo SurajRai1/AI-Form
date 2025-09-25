@@ -24,6 +24,7 @@ import {
   AlertTriangle,
   RefreshCcw,
   Copy, // Import Copy icon
+  Inbox, // Import Inbox icon for submissions
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserForms, saveForm, deleteForm as dbDeleteForm, updateForm as dbUpdateForm } from '@/lib/database';
@@ -48,6 +49,7 @@ import { toast } from 'sonner';
 import { FormChatCard } from './form-chat-card';
 import FormPreview from './form-preview';
 import { Input } from '@/components/ui/input'; // Import Input component
+import GlobalAnalyticsDashboard from './global-analytics-dashboard'; // Import the new component
 
 type FormOptionsContent = {
     forms: GeneratedForm[];
@@ -221,8 +223,7 @@ const ChatInterface: React.FC<any> = ({
 
 
 // FORMS LIBRARY COMPONENT
-// ... (This component remains unchanged)
-const FormsLibrary: React.FC<any> = ({ forms, isLoading, onDelete, onUpdateStatus, onPreview, onEdit, onShare }) => {
+const FormsLibrary: React.FC<any> = ({ forms, isLoading, onDelete, onUpdateStatus, onPreview, onEdit, onShare, onViewSubmissions, onViewAnalytics }) => {
 
     if (isLoading) {
         return <div className="p-6 text-center text-muted-foreground">Loading your forms...</div>
@@ -291,6 +292,12 @@ const FormsLibrary: React.FC<any> = ({ forms, isLoading, onDelete, onUpdateStatu
                                     <DropdownMenuItem onClick={() => onEdit(form)}>
                                         <Edit size={14} className="mr-2"/> Edit
                                     </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onViewSubmissions(form)}>
+                                        <Inbox size={14} className="mr-2"/> Submissions
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onViewAnalytics(form)}>
+                                        <BarChart3 size={14} className="mr-2"/> Analytics
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => onUpdateStatus(form)}>
                                         {form.status === 'draft' ? <Check size={14} className="mr-2"/> : <X size={14} className="mr-2"/>}
                                         {form.status === 'draft' ? 'Publish' : 'Unpublish'}
@@ -312,8 +319,6 @@ const FormsLibrary: React.FC<any> = ({ forms, isLoading, onDelete, onUpdateStatu
     );
 };
 
-
-const Analytics = () => <div className="p-6"><h2 className="text-2xl font-bold">Analytics</h2><p>Analytics coming soon.</p></div>;
 const Settings = () => <div className="p-6"><h2 className="text-2xl font-bold">Settings</h2><p>Settings coming soon.</p></div>;
 
 
@@ -531,11 +536,19 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
   };
 
   const handlePreview = (form: GeneratedForm) => {
-      setFormToPreview(form);
+      router.push(`/dashboard?view=preview&formId=${form.id}`);
   };
   
   const handleEdit = (form: GeneratedForm) => {
       router.push(`/dashboard?view=builder&formId=${form.id}`);
+  };
+
+  const handleViewSubmissions = (form: GeneratedForm) => {
+      router.push(`/dashboard?view=submissions&formId=${form.id}`);
+  };
+  
+  const handleViewAnalytics = (form: GeneratedForm) => {
+      router.push(`/dashboard?view=analytics&formId=${form.id}`);
   };
 
   const startNewChat = () => {
@@ -563,8 +576,8 @@ const AIDashboard: React.FC<AIDashboardProps> = ({ activeTab, setActiveTab }) =>
         handleSaveForm={handleSaveForm}
         startNewChat={startNewChat}
       />}
-      {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} isLoading={loadingForms} onDelete={setFormToDelete} onUpdateStatus={handleUpdateStatus} onPreview={handlePreview} onEdit={handleEdit} onShare={handleShare}/></div>}
-      {activeTab === 'analytics' && <Analytics />}
+      {activeTab === 'forms' && <div className="overflow-y-auto h-full"><FormsLibrary forms={forms} isLoading={loadingForms} onDelete={setFormToDelete} onUpdateStatus={handleUpdateStatus} onPreview={handlePreview} onEdit={handleEdit} onShare={handleShare} onViewSubmissions={handleViewSubmissions} onViewAnalytics={handleViewAnalytics}/></div>}
+      {activeTab === 'analytics' && <GlobalAnalyticsDashboard />}
       {activeTab === 'settings' && <Settings />}
 
       <AlertDialog open={!!formToDelete} onOpenChange={(isOpen) => !isOpen && setFormToDelete(null)}>

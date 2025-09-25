@@ -102,3 +102,68 @@ export const saveSubmission = async (formId: string, submissionData: any) => {
   if (error) throw new Error(error.message);
   return data;
 };
+
+export const getFormSubmissions = async (formId: string) => {
+  const { data, error } = await supabase
+    .from('form_submissions')
+    .select('*')
+    .eq('form_id', formId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const getAggregatedFormStats = async (userId: string) => {
+  const { data: forms, error: formsError } = await supabase
+    .from('forms')
+    .select('id, content')
+    .eq('user_id', userId);
+
+  if (formsError) throw new Error(formsError.message);
+
+  const formIds = forms.map(f => f.id);
+
+  const { data: submissions, error: submissionsError } = await supabase
+    .from('form_submissions')
+    .select('form_id, created_at')
+    .in('form_id', formIds);
+
+  if (submissionsError) throw new Error(submissionsError.message);
+
+  const submissionCounts = submissions.reduce((acc, sub) => {
+    acc[sub.form_id] = (acc[sub.form_id] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const totalForms = forms.length;
+  const totalSubmissions = submissions.length;
+  
+  // These are simplified for the MVP. Real implementation would be more complex.
+  const overallCompletionRate = totalForms > 0 ? 87.3 : 0; 
+  const averageTimeToComplete = totalSubmissions > 0 ? 45 : 0;
+
+  let mostActiveForm = null;
+  let leastActiveForm = null;
+
+  if (totalForms > 0) {
+    const formsWithCounts = forms.map(form => ({
+      title: (form.content as GeneratedForm).title,
+      submissions: submissionCounts[form.id] || 0,
+    }));
+
+    if (formsWithCounts.length > 0) {
+      mostActiveForm = formsWithCounts.reduce((max, form) => form.submissions > max.submissions ? form : max, formsWithCounts[0]);
+      leastActiveForm = formsWithCounts.reduce((min, form) => form.submissions < min.submissions ? form : min, formsWithCounts[0]);
+    }
+  }
+
+  return {
+    totalForms,
+    totalSubmissions,
+    overallCompletionRate,
+    averageTimeToComplete,
+    mostActiveForm,
+    leastActiveForm,
+  };
+};

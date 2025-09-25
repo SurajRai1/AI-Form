@@ -61,7 +61,7 @@ export default function AIFormGenerator({ onFormGenerated }: AIFormGeneratorProp
         </div>
         <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 px-4 py-2 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800">
           <Sparkles className="mr-2 h-4 w-4" />
-          Powered by GPT-4
+          Powered by Google Gemini
         </Badge>
       </CardHeader>
       
