@@ -232,3 +232,29 @@ export const getAggregatedFormStats = async (userId: string) => {
     leastActiveForm,
   };
 };
+
+export const getCachedAnalysis = async (formId: string) => {
+    const { data, error } = await supabase
+        .from('analytics_cache')
+        .select('analysis, generated_at')
+        .eq('form_id', formId)
+        .single();
+
+    if (error || !data) {
+        return null;
+    }
+
+    return data;
+};
+
+export const cacheAnalysis = async (formId: string, analysis: any) => {
+    const { data, error } = await supabase
+        .from('analytics_cache')
+        .upsert({ form_id: formId, analysis, generated_at: new Date().toISOString() });
+
+    if (error) {
+        console.error('Error caching analysis:', error);
+    }
+
+    return data;
+};

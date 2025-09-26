@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { AIService, FormAnalytics } from '@/lib/ai';
+import { getCachedAnalysis, cacheAnalysis } from '@/lib/database';
+import { toast } from 'sonner';
+
 
 interface AnalyticsDashboardProps {
   formId: string;
@@ -28,15 +31,27 @@ export default function AnalyticsDashboard({ formId, formData }: AnalyticsDashbo
   const loadAnalytics = async () => {
     setLoading(true);
     try {
-      // NOTE: This uses sample data. We will connect to real data later.
-      const analyticsData = await AIService.analyzeFormData(formData);
-      setAnalytics(analyticsData);
+        const cachedData = await getCachedAnalysis(formId);
+        const cacheTimestamp = cachedData ? new Date(cachedData.generated_at) : null;
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+
+        if (cachedData && cacheTimestamp && cacheTimestamp > oneHourAgo) {
+            setAnalytics(cachedData.analysis);
+            toast.info("Loaded cached analytics data.");
+        } else {
+            const analyticsData = await AIService.analyzeFormData(formData);
+            await cacheAnalysis(formId, analyticsData);
+            setAnalytics(analyticsData);
+            toast.success("Generated new form analytics.");
+        }
     } catch (error) {
-      console.error('Error loading analytics:', error);
+        console.error('Error loading analytics:', error);
+        toast.error("Failed to load analytics data.");
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   };
+
 
   const askAI = async () => {
     if (!aiQuestion.trim()) return;

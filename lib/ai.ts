@@ -56,7 +56,7 @@ export class AIService {
     private static async getJsonContent(
         systemPrompt: string,
         userPrompt: string,
-        model: string = 'gemini-1.5-flash-latest' // Updated to a valid and current model
+        model: string = 'gemini-1.5-flash' // Updated to a valid and current model
     ): Promise<any> {
         if (!gemini) {
             throw new Error('Gemini API key is not configured.');
@@ -90,7 +90,7 @@ export class AIService {
     private static async getTextContent(
         systemPrompt: string,
         userPrompt: string,
-        model: string = 'gemini-1.5-flash-latest' // Updated to a valid and current model
+        model: string = 'gemini-1.5-flash' // Updated to a valid and current model
     ): Promise<string> {
         if (!gemini) {
             throw new Error('Gemini API key is not configured.');
