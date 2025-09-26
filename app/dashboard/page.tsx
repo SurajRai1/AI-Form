@@ -77,13 +77,13 @@ function DashboardContent() {
 
 
   const [activeTab, setActiveTab] = useState(tab);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(conversationId);
-  const [conversations, setConversations] = useState<any[]>([]);
-  
-  const [formToLoad, setFormToLoad] = React.useState<GeneratedForm | null>(null);
-  const [formSubmissions, setFormSubmissions] = React.useState<any[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState < string | null > (conversationId);
+  const [conversations, setConversations] = useState < any[] > ([]);
+
+  const [formToLoad, setFormToLoad] = React.useState < GeneratedForm | null > (null);
+  const [formSubmissions, setFormSubmissions] = React.useState < any[] > ([]);
   const [isLoadingForm, setIsLoadingForm] = React.useState(false);
-  
+
   const fetchConversations = useCallback(async () => {
     if (!user) return;
     const convos = await getUserConversations(user.id);
@@ -122,17 +122,17 @@ function DashboardContent() {
       fetchFormData();
     }
   }, [view, formId, router]);
-  
+
   const handleBackToDashboard = () => {
     router.push('/dashboard?tab=forms');
   };
 
   if (isLoadingForm) {
-      return (
-        <div className="flex h-full items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </div>
-      );
+    return (
+      <div className="flex h-full items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (view === 'builder' && formToLoad) {
@@ -141,13 +141,13 @@ function DashboardContent() {
 
   if (view === 'preview' && formToLoad) {
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
-            <Button onClick={handleBackToDashboard} variant="outline" className="mb-4">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Forms
-            </Button>
-            <FormPreview form={formToLoad} />
-        </div>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <Button onClick={handleBackToDashboard} variant="outline" className="mb-4">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Forms
+        </Button>
+        <FormPreview form={formToLoad} />
+      </div>
     );
   }
 
@@ -159,26 +159,26 @@ function DashboardContent() {
     return (
       <div className="p-4 sm:p-6 lg:p-8">
         <Button onClick={handleBackToDashboard} variant="outline" className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Forms
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Forms
         </Button>
         <AnalyticsDashboard formId={formToLoad.id} formData={{ ...formToLoad, submissions: formSubmissions }} />
       </div>
     );
   }
-  
-  return <AIDashboard 
-            activeTab={activeTab as any} 
-            activeConversationId={activeConversationId}
-            conversations={conversations}
-            refreshConversations={fetchConversations}
-         />;
+
+  return <AIDashboard
+    activeTab={activeTab as any}
+    activeConversationId={activeConversationId}
+    conversations={conversations}
+    refreshConversations={fetchConversations}
+  />;
 }
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
   const router = useRouter();
-  const [conversations, setConversations] = useState<any[]>([]);
+  const [conversations, setConversations] = useState < any[] > ([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const fetchConversations = useCallback(async () => {
@@ -211,97 +211,97 @@ export default function DashboardPage() {
 
   return (
     <TooltipProvider>
-    <div className={cn(
+      <div className={cn(
         "grid min-h-screen w-full transition-all duration-300",
         isSidebarCollapsed ? "md:grid-cols-[80px_1fr]" : "md:grid-cols-[280px_1fr]"
-    )}>
-      {/* Desktop Sidebar */}
-      <div className="hidden border-r bg-muted/40 md:block">
-        <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-              <Package2 className="h-6 w-6" />
-              {!isSidebarCollapsed && <span className="">FormCraft AI</span>}
-            </Link>
-            <Button 
-                variant="outline" 
-                size="icon" 
-                className="ml-auto h-8 w-8"
+      )}>
+        {/* Desktop Sidebar */}
+        <div className="hidden border-r bg-muted/40 md:block">
+          <div className="flex h-full max-h-screen flex-col gap-2">
+            <div className="group flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+              <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+                <Package2 className="h-6 w-6" />
+                {!isSidebarCollapsed && <span className="">FormCraft AI</span>}
+              </Link>
+              <Button
+                variant="outline"
+                size="icon"
+                className="ml-auto h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            >
-              {isSidebarCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-              <span className="sr-only">Toggle sidebar</span>
-            </Button>
-          </div>
-          <div className={cn("p-4", isSidebarCollapsed && "px-2")}>
-            <Tooltip>
+              >
+                {isSidebarCollapsed ? <PanelLeftOpen className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                <span className="sr-only">Toggle sidebar</span>
+              </Button>
+            </div>
+            <div className={cn("p-4", isSidebarCollapsed && "px-2")}>
+              <Tooltip>
                 <TooltipTrigger asChild>
-                    <Button className="w-full" onClick={handleNewChat} size={isSidebarCollapsed ? "icon" : "default"}>
-                        <Plus size={16} className={cn(!isSidebarCollapsed && "mr-2")} />
-                        {!isSidebarCollapsed && "New Chat"}
-                    </Button>
+                  <Button className="w-full" onClick={handleNewChat} size={isSidebarCollapsed ? "icon" : "default"}>
+                    <Plus size={20} className={cn(!isSidebarCollapsed && "mr-2")} />
+                    {!isSidebarCollapsed && "New Chat"}
+                  </Button>
                 </TooltipTrigger>
                 {isSidebarCollapsed && <TooltipContent side="right">New Chat</TooltipContent>}
-            </Tooltip>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            <nav className={cn("grid items-start px-2 text-sm font-medium lg:px-4", isSidebarCollapsed && "px-2")}>
-              <Tooltip>
+              </Tooltip>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <nav className={cn("grid items-start px-2 text-sm font-medium lg:px-4", isSidebarCollapsed && "px-2")}>
+                <Tooltip>
                   <TooltipTrigger asChild>
-                      <Link
-                        href="/dashboard?tab=forms"
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                      >
-                        <FileText className="h-4 w-4" />
-                        {!isSidebarCollapsed && "My Forms"}
-                      </Link>
+                    <Link
+                      href="/dashboard?tab=forms"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                    >
+                      <FileText className="h-5 w-5" />
+                      {!isSidebarCollapsed && "My Forms"}
+                    </Link>
                   </TooltipTrigger>
                   {isSidebarCollapsed && <TooltipContent side="right">My Forms</TooltipContent>}
-              </Tooltip>
-              <Tooltip>
+                </Tooltip>
+                <Tooltip>
                   <TooltipTrigger asChild>
-                      <Link
-                        href="/dashboard?tab=analytics"
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                        {!isSidebarCollapsed && "Analytics"}
-                      </Link>
+                    <Link
+                      href="/dashboard?tab=analytics"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                    >
+                      <BarChart3 className="h-5 w-5" />
+                      {!isSidebarCollapsed && "Analytics"}
+                    </Link>
                   </TooltipTrigger>
                   {isSidebarCollapsed && <TooltipContent side="right">Analytics</TooltipContent>}
-              </Tooltip>
-              <Tooltip>
+                </Tooltip>
+                <Tooltip>
                   <TooltipTrigger asChild>
-                      <Link
-                        href="/dashboard?tab=settings"
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                      >
-                        <SettingsIcon className="h-4 w-4" />
-                        {!isSidebarCollapsed && "Settings"}
-                      </Link>
+                    <Link
+                      href="/dashboard?tab=settings"
+                      className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                    >
+                      <SettingsIcon className="h-5 w-5" />
+                      {!isSidebarCollapsed && "Settings"}
+                    </Link>
                   </TooltipTrigger>
                   {isSidebarCollapsed && <TooltipContent side="right">Settings</TooltipContent>}
-              </Tooltip>
-              <div className="my-4 border-t"></div>
-              {/* Conversation History */}
-              {conversations.map(convo => (
-                <Tooltip key={convo.id}>
+                </Tooltip>
+                <div className="my-4 border-t"></div>
+                {/* Conversation History */}
+                {conversations.map(convo => (
+                  <Tooltip key={convo.id}>
                     <TooltipTrigger asChild>
-                        <Link
-                          href={`/dashboard?tab=chat&conversationId=${convo.id}`}
-                          className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          {!isSidebarCollapsed && <span className="truncate">{convo.title}</span>}
-                        </Link>
+                      <Link
+                        href={`/dashboard?tab=chat&conversationId=${convo.id}`}
+                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                      >
+                        <MessageSquare className="h-5 w-5" />
+                        {!isSidebarCollapsed && <span className="truncate">{convo.title}</span>}
+                      </Link>
                     </TooltipTrigger>
                     {isSidebarCollapsed && <TooltipContent side="right">{convo.title}</TooltipContent>}
-                </Tooltip>
-              ))}
-            </nav>
-          </div>
-          {!isSidebarCollapsed && (
-            <div className="mt-auto p-4">
+                  </Tooltip>
+                ))}
+              </nav>
+            </div>
+            {!isSidebarCollapsed && (
+              <div className="mt-auto p-4">
                 <Card>
                   <CardHeader className="p-2 pt-0 md:p-4">
                     <CardTitle>Upgrade to Pro</CardTitle>
@@ -316,125 +316,125 @@ export default function DashboardPage() {
                     </Button>
                   </CardContent>
                 </Card>
-            </div>
-          )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="flex flex-col max-h-screen overflow-hidden">
-        {/* Header with Theme Toggle */}
-        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col">
-              <SheetHeader>
-                <SheetTitle>FormCraft AI</SheetTitle>
-                <SheetDescription>
-                  Navigate to different sections of the application.
-                </SheetDescription>
-              </SheetHeader>
-              <nav className="grid gap-2 text-lg font-medium">
-                <Link
-                  href="#"
-                  className="flex items-center gap-2 text-lg font-semibold mb-4"
+        <div className="flex flex-col max-h-screen overflow-hidden">
+          {/* Header with Theme Toggle */}
+          <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0 md:hidden"
                 >
-                  <Package2 className="h-6 w-6" />
-                  <span className="">FormCraft AI</span>
-                </Link>
-                 <Link
+                  <Menu className="h-6 w-6" />
+                  <span className="sr-only">Toggle navigation menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="flex flex-col">
+                <SheetHeader>
+                  <SheetTitle>FormCraft AI</SheetTitle>
+                  <SheetDescription>
+                    Navigate to different sections of the application.
+                  </SheetDescription>
+                </SheetHeader>
+                <nav className="grid gap-2 text-lg font-medium">
+                  <Link
+                    href="#"
+                    className="flex items-center gap-2 text-lg font-semibold mb-4"
+                  >
+                    <Package2 className="h-6 w-6" />
+                    <span className="">FormCraft AI</span>
+                  </Link>
+                  <Link
                     href="/dashboard?tab=chat"
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                 >
-                    <Send className="h-5 w-5" />
+                  >
+                    <Send className="h-6 w-6" />
                     AI Chat
-                </Link>
-                <Link
+                  </Link>
+                  <Link
                     href="/dashboard?tab=forms"
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
-                >
-                    <FileText className="h-5 w-5" />
+                  >
+                    <FileText className="h-6 w-6" />
                     My Forms
-                </Link>
-                <Link
+                  </Link>
+                  <Link
                     href="/dashboard?tab=analytics"
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                    <BarChart3 className="h-5 w-5" />
+                  >
+                    <BarChart3 className="h-6 w-6" />
                     Analytics
-                </Link>
-                <Link
+                  </Link>
+                  <Link
                     href="/dashboard?tab=settings"
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                >
-                    <SettingsIcon className="h-5 w-5" />
+                  >
+                    <SettingsIcon className="h-6 w-6" />
                     Settings
-                </Link>
-              </nav>
-              <div className="mt-auto">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Upgrade to Pro</CardTitle>
-                    <CardDescription>
-                      Unlock all features and get unlimited access to our
-                      support team.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button size="sm" className="w-full">
-                      Upgrade
-                    </Button>
-                  </CardContent>
-                </Card>
-              </div>
-            </SheetContent>
-          </Sheet>
-          <div className="w-full flex-1">
-            <form>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search forms..."
-                  className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                />
-              </div>
-            </form>
-          </div>
-          <ThemeToggle />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="secondary" size="icon" className="rounded-full">
-                <CircleUser className="h-5 w-5" />
-                <span className="sr-only">Toggle user menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
-                {user ? user.email : 'My Account'}
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Support</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={signOut}>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </header>
-        <main className="flex-1 overflow-auto">
+                  </Link>
+                </nav>
+                <div className="mt-auto">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Upgrade to Pro</CardTitle>
+                      <CardDescription>
+                        Unlock all features and get unlimited access to our
+                        support team.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button size="sm" className="w-full">
+                        Upgrade
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+              </SheetContent>
+            </Sheet>
+            <div className="w-full flex-1">
+              <form>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search forms..."
+                    className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+                  />
+                </div>
+              </form>
+            </div>
+            <ThemeToggle />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" size="icon" className="rounded-full">
+                  <CircleUser className="h-6 w-6" />
+                  <span className="sr-only">Toggle user menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>
+                  {user ? user.email : 'My Account'}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Settings</DropdownMenuItem>
+                <DropdownMenuItem>Support</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </header>
+          <main className="flex-1 overflow-auto">
             <Suspense fallback={<div className="flex h-full items-center justify-center">Loading...</div>}>
               <DashboardContent />
             </Suspense>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
     </TooltipProvider>
   );
 }
